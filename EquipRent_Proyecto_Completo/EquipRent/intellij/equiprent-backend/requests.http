@@ -1,0 +1,163 @@
+### =========================================================
+### EquipRent · Pruebas HTTP (IntelliJ HTTP Client)
+### Ejecuta en orden. Requiere V1 + V2 cargados en PostgreSQL.
+### =========================================================
+
+### ---------- Cap. 03 ----------
+### Health
+GET http://localhost:8080/api/health
+Accept: application/json
+
+### Demo de la entidad padre
+GET http://localhost:8080/api/equipos/demo
+Accept: application/json
+
+### ---------- Cap. 04 / 05 / 06 · EQUIPO (padre) ----------
+### [201] Crear equipo válido
+POST http://localhost:8080/api/equipos
+Content-Type: application/json
+
+{
+  "categoriaId": 2,
+  "codigo": "eq-cam-001",
+  "nombre": "Cámara de video 4K",
+  "marca": "Sony",
+  "modelo": "FX30",
+  "descripcion": "Incluye batería extra"
+}
+
+### [400] Campo obligatorio vacío
+POST http://localhost:8080/api/equipos
+Content-Type: application/json
+
+{
+  "categoriaId": 2,
+  "codigo": "",
+  "nombre": ""
+}
+
+### [400] Formato inválido (código con espacios y símbolos)
+POST http://localhost:8080/api/equipos
+Content-Type: application/json
+
+{
+  "categoriaId": 2,
+  "codigo": "EQ #001 X",
+  "nombre": "Equipo con código inválido"
+}
+
+### [409] Código UNIQUE repetido (existe en la semilla)
+POST http://localhost:8080/api/equipos
+Content-Type: application/json
+
+{
+  "categoriaId": 1,
+  "codigo": "EQ-TAL-001",
+  "nombre": "Taladro duplicado"
+}
+
+### [422] Categoría inexistente
+POST http://localhost:8080/api/equipos
+Content-Type: application/json
+
+{
+  "categoriaId": 999,
+  "codigo": "EQ-XXX-001",
+  "nombre": "Equipo sin categoría"
+}
+
+### [200] Listar
+GET http://localhost:8080/api/equipos
+
+### [200] Listar con filtro opcional (@RequestParam)
+GET http://localhost:8080/api/equipos?nombre=generador
+
+### [200] Buscar por id existente (@PathVariable)
+GET http://localhost:8080/api/equipos/1
+
+### [404] Buscar por id inexistente
+GET http://localhost:8080/api/equipos/999
+
+### [400] Id con tipo inválido
+GET http://localhost:8080/api/equipos/abc
+
+### ---------- Cap. 07 · UNIDAD_EQUIPO (dependiente) ----------
+### [201] Registrar unidad con padre existente
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "codigoUnidad": "UN-TAL-001-03",
+  "numeroSerie": "BSH-2024-0003",
+  "fechaAdquisicion": "2025-03-15",
+  "valorReferencial": 980.50,
+  "observacion": "Unidad nueva"
+}
+
+### [200] Consultar unidad por id
+GET http://localhost:8080/api/unidades/1
+
+### [200] Listar unidades del mismo equipo
+GET http://localhost:8080/api/unidades/equipo/1
+
+### [404] Registrar con equipo (padre) inexistente
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 9999,
+  "codigoUnidad": "UN-FANTASMA-01"
+}
+
+### [409] Código de unidad duplicado (RN-01)
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "codigoUnidad": "UN-TAL-001-01"
+}
+
+### [409] Número de serie duplicado
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "codigoUnidad": "UN-TAL-001-04",
+  "numeroSerie": "BSH-2024-0001"
+}
+
+### [400] Estado fuera del enum/CHECK
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "codigoUnidad": "UN-TAL-001-05",
+  "estado": "PERDIDA"
+}
+
+### [422] Estado válido pero no permitido en el alta
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "codigoUnidad": "UN-TAL-001-06",
+  "estado": "ENTREGADA"
+}
+
+### [400] Valor negativo
+POST http://localhost:8080/api/unidades
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "codigoUnidad": "UN-TAL-001-07",
+  "valorReferencial": -10
+}
+
+### [404] Unidades de un equipo inexistente
+GET http://localhost:8080/api/unidades/equipo/9999
