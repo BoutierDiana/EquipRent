@@ -1,18 +1,75 @@
+/* ==========================================================================
+   tokens.css — Design tokens de la estética Cyber-Industrial EquipRent
+   Una sola fuente para colores, tipografía, radios, sombras y espaciado (Guía 09).
+   ========================================================================== */
 :root {
-    --color-primary: #7c3aed;          /* Violeta principal */
-    --color-primary-hover: #6d28d9;    /* Violeta oscuro hover */
-    --color-primary-light: #ede9fe;    /* Lavanda claro */
-    --color-primary-border: #c4b5fd;   /* Borde morado suave */
+    /* Fondos */
+    --color-darker: #07030c;        /* cyberDarker: fondo base */
+    --color-dark: #0b0614;          /* cyberDark: fondo de la app */
+    --color-sidebar: #0e071c;       /* cyberSidebar */
+    --color-header: #0e071a;        /* cyberHeader */
+    --color-card: #140b24;          /* cyberCard: tarjetas, tablas, modales, filtros */
+    --color-card-alt: #150d24;      /* cyberCard alterno: filas pares, hover suave */
+    --color-input: #130924;         /* cyberInput: inputs y selects */
 
-    --color-bg-dark: #0f0a1c;          /* Fondo base morado muy oscuro */
-    --color-surface-dark: #19122b;     /* Superficie / Paneles */
-    --color-card-dark: #221a3a;        /* Fondo tarjetas */
-    --color-border-dark: #362956;      /* Bordes morados sutiles */
+    /* Púrpura (identidad) */
+    --color-purple-300: #d8b4fe;
+    --color-purple-400: #c084fc;
+    --color-purple-500: #a855f7;
+    --color-purple-600: #9333ea;
+    --color-purple-800: #581c87;
+    --color-purple-900: #3b0764;
 
-    --color-text-main: #f8fafc;
-    --color-text-muted: #a78bfa;       /* Texto secundario violeta claro */
-    --color-text-subtle: #7c6f9e;
+    /* Lima (acento tecnológico, foco, ítem activo, métricas clave) */
+    --color-lime: #ccff00;
+    --color-lime-hover: #e4ff54;
 
+    /* Semánticos (siempre acompañados de texto, nunca solo color) */
+    --color-success: #ccff00;
+    --color-info: #67e8f9;
+    --color-warning: #fbbf24;
+    --color-danger: #f43f5e;
+    --color-neutral: #a1a1aa;
+
+    /* Texto */
+    --color-text: #f5f3ff;
+    --color-text-muted: #b9a7d6;
+    --color-text-subtle: #8a78a8;
+
+    /* Bordes */
+    --color-border: rgba(168, 85, 247, 0.22);
+    --color-border-strong: rgba(168, 85, 247, 0.45);
+
+    /* Tipografía */
+    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --font-cyber: 'Chakra Petch', 'Plus Jakarta Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+    --font-pixel: 'Silkscreen', 'JetBrains Mono', monospace;
+
+    /* Efectos */
+    --shadow-neon: 0 0 20px -3px rgba(168, 85, 247, 0.45);
+    --shadow-neon-lime: 0 0 18px -4px rgba(204, 255, 0, 0.55);
+    --shadow-card: 0 12px 30px -12px rgba(7, 3, 12, 0.9);
+    --grid-line: rgba(168, 85, 247, 0.07);
+    --focus-ring: 0 0 0 2px var(--color-dark), 0 0 0 4px var(--color-lime);
+
+    /* Radios y espacios */
     --radius-sm: 6px;
     --radius-md: 10px;
+    --radius-lg: 14px;
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+
+    /* Compatibilidad con los nombres de tokens anteriores */
+    --color-primary: var(--color-purple-500);
+    --color-primary-hover: var(--color-purple-600);
+    --color-bg-dark: var(--color-dark);
+    --color-surface-dark: var(--color-sidebar);
+    --color-card-dark: var(--color-card);
+    --color-border-dark: var(--color-border);
+    --color-text-main: var(--color-text);
 }

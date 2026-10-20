@@ -7,44 +7,23 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     loading?: boolean;
 }
 
+/**
+ * Botón reutilizable (Guía 09). variant decide la presentación vía clases CSS
+ * (styles/ui.css); no codifica reglas de negocio. loading evita dobles envíos.
+ */
 export function Button({
                            variant = 'primary',
                            loading = false,
                            disabled,
                            children,
-                           style,
+                           className,
+                           type = 'button',
                            ...props
                        }: ButtonProps) {
-    const getVariantStyles = (): React.CSSProperties => {
-        switch (variant) {
-            case 'danger':
-                return { background: '#dc2626', color: '#ffffff', border: 'none' };
-            case 'secondary':
-                return { background: '#251b3e', color: '#ddd6fe', border: '1px solid #4c3875' };
-            case 'ghost':
-                return { background: 'transparent', color: '#c4b5fd', border: '1px solid #4c3875' };
-            case 'primary':
-            default:
-                return { background: '#7c3aed', color: '#ffffff', border: 'none' };
-        }
-    };
+    const classes = ['btn', `btn--${variant}`, className].filter(Boolean).join(' ');
 
     return (
-        <button
-            disabled={disabled || loading}
-            style={{
-                padding: '9px 18px',
-                borderRadius: '7px',
-                fontWeight: 600,
-                fontSize: '0.92rem',
-                cursor: disabled || loading ? 'not-allowed' : 'pointer',
-                opacity: disabled || loading ? 0.65 : 1,
-                transition: 'all 0.2s ease',
-                ...getVariantStyles(),
-                ...style,
-            }}
-            {...props}
-        >
+        <button type={type} className={classes} disabled={disabled || loading} {...props}>
             {loading ? 'Procesando...' : children}
         </button>
     );

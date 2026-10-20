@@ -3,6 +3,10 @@ import React from 'react';
 type Props = { children: React.ReactNode };
 type State = { hasError: boolean; errorMessage: string };
 
+/**
+ * Captura errores de RENDER de React (Guía 10). No reemplaza el try/catch de fetch:
+ * los errores asíncronos y de event handlers se manejan en hooks y páginas.
+ */
 export class AppErrorBoundary extends React.Component<Props, State> {
     state: State = { hasError: false, errorMessage: '' };
 
@@ -17,40 +21,22 @@ export class AppErrorBoundary extends React.Component<Props, State> {
     render() {
         if (this.state.hasError) {
             return (
-                <main
-                    role="alert"
-                    style={{
-                        padding: '2.5rem',
-                        margin: '2rem auto',
-                        maxWidth: '600px',
-                        textAlign: 'center',
-                        background: '#ffffff',
-                        borderRadius: '8px',
-                        border: '1px solid #fee2e2',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
-                    }}
-                >
-                    <h1 style={{ color: '#991b1b', fontSize: '1.5rem', marginBottom: '0.5rem' }}>
-                        La interfaz tuvo un problema
-                    </h1>
-                    <p style={{ color: '#475569', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
-                        Ocurrió un error inesperado al renderizar este componente.
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => window.location.assign('/')}
-                        style={{
-                            padding: '8px 16px',
-                            borderRadius: '6px',
-                            border: 'none',
-                            background: '#2563eb',
-                            color: '#fff',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                        }}
-                    >
-                        Volver al inicio
-                    </button>
+                <main role="alert" className="error-boundary bg-cyber-grid">
+                    <div className="error-boundary__card">
+                        <p className="eyebrow">Fallo de renderizado</p>
+                        <h1>La interfaz tuvo un problema</h1>
+                        <p>Ocurrió un error inesperado al renderizar este componente.</p>
+                        {this.state.errorMessage && (
+                            <pre className="error-boundary__detail">{this.state.errorMessage}</pre>
+                        )}
+                        <button
+                            type="button"
+                            className="btn btn--primary"
+                            onClick={() => window.location.assign('/')}
+                        >
+                            Volver al inicio
+                        </button>
+                    </div>
                 </main>
             );
         }

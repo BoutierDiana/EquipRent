@@ -1,17 +1,15 @@
-export function StatusBadge({ active, text }: { active: boolean; text?: string }) {
+export type BadgeTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
+
+export interface StatusBadgeProps {
+    active: boolean;
+    text?: string;
+    /** Tono visual opcional; si se omite se deriva de active. El texto siempre acompaña al color. */
+    tone?: BadgeTone;
+}
+
+export function StatusBadge({ active, text, tone }: StatusBadgeProps) {
     const displayText = text ?? (active ? 'Activo' : 'Inactivo');
-    return (
-        <span
-            style={{
-                padding: '3px 10px',
-                borderRadius: '12px',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                background: active ? '#dcfce7' : '#fee2e2',
-                color: active ? '#15803d' : '#991b1b',
-            }}
-        >
-      {displayText}
-    </span>
-    );
+    const resolvedTone: BadgeTone = tone ?? (active ? 'success' : 'danger');
+
+    return <span className={`badge badge--${resolvedTone}`}>{displayText}</span>;
 }

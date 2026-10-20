@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { Icon } from './Icon';
 
 export interface ModalProps {
     open: boolean;
@@ -7,6 +8,10 @@ export interface ModalProps {
     onClose: () => void;
 }
 
+/**
+ * Modal sobre <dialog> nativo: showModal() lo coloca en la capa superior,
+ * bloquea el fondo y permite cerrar con Escape (onCancel).
+ */
 export function Modal({ open, title, children, onClose }: ModalProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -22,42 +27,12 @@ export function Modal({ open, title, children, onClose }: ModalProps) {
     }, [open]);
 
     return (
-        <dialog
-            ref={dialogRef}
-            onCancel={onClose}
-            onClose={onClose}
-            style={{
-                padding: 0,
-                borderRadius: '12px',
-                border: 'none',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
-                maxWidth: '500px',
-                width: '90%',
-            }}
-        >
-            <div style={{ padding: '1.5rem', background: '#fff' }}>
-                <header
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    <h2 style={{ margin: 0, fontSize: '1.25rem', color: '#0f172a' }}>{title}</h2>
-                    <button
-                        type="button"
-                        aria-label="Cerrar"
-                        onClick={onClose}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            fontSize: '1.5rem',
-                            cursor: 'pointer',
-                            color: '#64748b',
-                        }}
-                    >
-                        ×
+        <dialog ref={dialogRef} className="modal" onCancel={onClose} onClose={onClose}>
+            <div className="modal__body">
+                <header className="modal__header">
+                    <h2>{title}</h2>
+                    <button type="button" className="modal__close" aria-label="Cerrar" onClick={onClose}>
+                        <Icon name="close" size={18} />
                     </button>
                 </header>
                 {children}

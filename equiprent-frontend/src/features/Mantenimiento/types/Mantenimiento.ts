@@ -1,8 +1,3 @@
-export interface Mantenimiento {
-    id?: number;
-    unidadEquipoId: number;
-    fecha: string;
-    descripcion: string;
-    costo: number;
-    tipoMantenimiento: string;
-}
+// El contrato vive en models/Mantenimiento.ts; este archivo lo reexporta
+// para no romper los imports existentes desde types/.
+export type { Mantenimiento, TipoMantenimiento, EstadoMantenimiento } from '../models/Mantenimiento';

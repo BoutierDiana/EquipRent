@@ -1,8 +1,20 @@
 import { useEffect, useState, type ChangeEvent, type SyntheticEvent } from 'react';
+import { Button } from '../../../components/ui/Button';
+import { datetimeLocalToIso, isoToDatetimeLocal, nowDatetimeLocal } from '../../../shared/utils/dates';
 import type { UnidadEquipo } from '../../UnidadEquipo/models/UnidadEquipo';
-import type { Mantenimiento } from '../models/Mantenimiento';
+import { describirUnidad } from '../../UnidadEquipo/utils/unidadEquipoFormat';
+import {
+    ESTADO_MANTENIMIENTO_LABELS,
+    ESTADOS_MANTENIMIENTO,
+    TIPO_MANTENIMIENTO_LABELS,
+    TIPOS_MANTENIMIENTO,
+    type EstadoMantenimiento,
+    type Mantenimiento,
+    type TipoMantenimiento,
+} from '../models/Mantenimiento';
 import { mantenimientoService } from '../services/mantenimientoService';
 import type { MantenimientoFormData, MantenimientoRequest } from '../types/MantenimientoRequests';
+import { validarMantenimiento, type MantenimientoFormErrors } from '../utils/mantenimientoValidation';
 
 interface MantenimientoFormProps {
     unidades: UnidadEquipo[];
@@ -11,15 +23,23 @@ interface MantenimientoFormProps {
     onCancelEdit?: () => void;
 }
 
-const initialForm: MantenimientoFormData = {
+const buildInitialForm = (): MantenimientoFormData => ({
     unidadEquipoId: '',
     tipo: 'PREVENTIVO',
-    estado: 'PROGRAMADO',
-    descripcion: '',
-    costo: '0',
-    fechaIngreso: new Date().toISOString().slice(0, 16),
+    estado: 'EN_PROCESO',
+    fechaIngreso: nowDatetimeLocal(),
     fechaEgresoEstimada: '',
-};
+    fechaEgresoReal: '',
+});
+
+const toFormData = (m: Mantenimiento): MantenimientoFormData => ({
+    unidadEquipoId: String(m.unidadEquipoId),
+    tipo: m.tipo,
+    estado: m.estado,
+    fechaIngreso: isoToDatetimeLocal(m.fechaIngreso),
+    fechaEgresoEstimada: isoToDatetimeLocal(m.fechaEgresoEstimada),
+    fechaEgresoReal: isoToDatetimeLocal(m.fechaEgresoReal),
+});
 
 export default function MantenimientoForm({
                                               unidades,
@@ -27,30 +47,21 @@ export default function MantenimientoForm({
                                               onSaved,
                                               onCancelEdit,
                                           }: MantenimientoFormProps) {
-    const [formData, setFormData] = useState<MantenimientoFormData>(initialForm);
+    const [formData, setFormData] = useState<MantenimientoFormData>(buildInitialForm);
+    const [errors, setErrors] = useState<MantenimientoFormErrors>({});
     const [saving, setSaving] = useState(false);
     const [apiError, setApiError] = useState('');
 
     const isEditing = Boolean(mantenimiento);
 
+    // Sincroniza el formulario con la orden a editar (no dispara HTTP).
     useEffect(() => {
-        if (mantenimiento) {
-            setFormData({
-                unidadEquipoId: String((mantenimiento as any).unidadEquipoId ?? (mantenimiento as any).unidadEquipo?.id ?? ''),
-                tipo: (mantenimiento as any).tipoMantenimiento ?? (mantenimiento as any).tipo ?? 'PREVENTIVO',
-                estado: (mantenimiento as any).estado ?? 'PROGRAMADO',
-                descripcion: (mantenimiento as any).descripcion ?? '',
-                costo: String((mantenimiento as any).costo ?? '0'),
-                fechaIngreso: (mantenimiento as any).fechaIngreso ? (mantenimiento as any).fechaIngreso.slice(0, 16) : '',
-                fechaEgresoEstimada: (mantenimiento as any).fechaEgresoEstimada ? (mantenimiento as any).fechaEgresoEstimada.slice(0, 16) : '',
-            });
-        } else {
-            setFormData(initialForm);
-        }
+        setFormData(mantenimiento ? toFormData(mantenimiento) : buildInitialForm());
+        setErrors({});
         setApiError('');
     }, [mantenimiento]);
 
-    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
@@ -59,19 +70,19 @@ export default function MantenimientoForm({
         e.preventDefault();
         setApiError('');
 
-        if (!formData.unidadEquipoId) {
-            setApiError('Debe seleccionar una unidad de maquinaria.');
-            return;
-        }
+        // Valida también que la unidad padre exista entre las cargadas (Guía 07).
+        const validationErrors = validarMantenimiento(formData, unidades);
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length > 0) return;
 
         const payload: MantenimientoRequest = {
             unidadEquipoId: Number(formData.unidadEquipoId),
-            tipo: formData.tipo,
-            estado: formData.estado,
-            descripcion: formData.descripcion.trim(),
-            costo: Number(formData.costo) || 0,
-            fechaIngreso: formData.fechaIngreso ? new Date(formData.fechaIngreso).toISOString() : new Date().toISOString(),
-            fechaEgresoEstimada: formData.fechaEgresoEstimada ? new Date(formData.fechaEgresoEstimada).toISOString() : new Date().toISOString(),
+            danoId: mantenimiento?.danoId ?? null,
+            tipo: formData.tipo as TipoMantenimiento,
+            estado: formData.estado as EstadoMantenimiento,
+            fechaIngreso: datetimeLocalToIso(formData.fechaIngreso),
+            fechaEgresoEstimada: datetimeLocalToIso(formData.fechaEgresoEstimada),
+            fechaEgresoReal: formData.fechaEgresoReal ? datetimeLocalToIso(formData.fechaEgresoReal) : null,
         };
 
         try {
@@ -82,7 +93,7 @@ export default function MantenimientoForm({
             } else {
                 const creado = await mantenimientoService.crear(payload);
                 onSaved(creado, 'create');
-                setFormData(initialForm);
+                setFormData(buildInitialForm());
             }
         } catch (err) {
             setApiError(err instanceof Error ? err.message : 'Error al guardar la orden');
@@ -92,68 +103,47 @@ export default function MantenimientoForm({
     };
 
     return (
-        <form className="entity-form" onSubmit={handleSubmit} style={{ background: '#ffffff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '1.5rem' }}>
+        <form className="entity-form" onSubmit={handleSubmit} noValidate>
             <h3>{isEditing ? `Editar Orden de Mantenimiento #${mantenimiento?.id}` : 'Nueva Orden de Mantenimiento'}</h3>
 
-            <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
-                {/* Selector controlado de la entidad padre */}
-                <label>
+            <div className="form-grid">
+                {/* Selector controlado de la entidad padre: muestra la serie, envía el id */}
+                <label className="form-span-2">
                     Maquinaria Asignada (*)
                     <select
                         name="unidadEquipoId"
                         value={formData.unidadEquipoId}
                         onChange={handleChange}
                         required
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                     >
                         <option value="">-- Seleccione una maquinaria --</option>
                         {unidades.map((u) => (
                             <option key={u.id} value={String(u.id)}>
-                                {u.codigoInventario} - {u.numeroSerie} ({u.marca} {u.modelo})
+                                {describirUnidad(u)}
                             </option>
                         ))}
                     </select>
+                    {errors.unidadEquipoId && <small className="field-error">{errors.unidadEquipoId}</small>}
                 </label>
 
                 <label>
                     Tipo de Servicio
-                    <select
-                        name="tipo"
-                        value={formData.tipo}
-                        onChange={handleChange}
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                    >
-                        <option value="PREVENTIVO">PREVENTIVO</option>
-                        <option value="CORRECTIVO">CORRECTIVO</option>
-                        <option value="INSPECCION">INSPECCIÓN</option>
+                    <select name="tipo" value={formData.tipo} onChange={handleChange}>
+                        {TIPOS_MANTENIMIENTO.map((tipo) => (
+                            <option key={tipo} value={tipo}>{TIPO_MANTENIMIENTO_LABELS[tipo]}</option>
+                        ))}
                     </select>
+                    {errors.tipo && <small className="field-error">{errors.tipo}</small>}
                 </label>
 
                 <label>
                     Estado de la Orden
-                    <select
-                        name="estado"
-                        value={formData.estado}
-                        onChange={handleChange}
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                    >
-                        <option value="PROGRAMADO">PROGRAMADO</option>
-                        <option value="EN_PROCESO">EN PROCESO</option>
-                        <option value="COMPLETADO">COMPLETADO</option>
-                        <option value="CANCELADO">CANCELADO</option>
+                    <select name="estado" value={formData.estado} onChange={handleChange}>
+                        {ESTADOS_MANTENIMIENTO.map((estado) => (
+                            <option key={estado} value={estado}>{ESTADO_MANTENIMIENTO_LABELS[estado]}</option>
+                        ))}
                     </select>
-                </label>
-
-                <label>
-                    Costo Estimado ($)
-                    <input
-                        type="number"
-                        name="costo"
-                        value={formData.costo}
-                        onChange={handleChange}
-                        step="0.01"
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-                    />
+                    {errors.estado && <small className="field-error">{errors.estado}</small>}
                 </label>
 
                 <label>
@@ -163,8 +153,8 @@ export default function MantenimientoForm({
                         name="fechaIngreso"
                         value={formData.fechaIngreso}
                         onChange={handleChange}
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                     />
+                    {errors.fechaIngreso && <small className="field-error">{errors.fechaIngreso}</small>}
                 </label>
 
                 <label>
@@ -174,38 +164,35 @@ export default function MantenimientoForm({
                         name="fechaEgresoEstimada"
                         value={formData.fechaEgresoEstimada}
                         onChange={handleChange}
-                        style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                     />
+                    {errors.fechaEgresoEstimada && (
+                        <small className="field-error">{errors.fechaEgresoEstimada}</small>
+                    )}
+                </label>
+
+                <label>
+                    Fecha Egreso Real (opcional)
+                    <input
+                        type="datetime-local"
+                        name="fechaEgresoReal"
+                        value={formData.fechaEgresoReal}
+                        onChange={handleChange}
+                    />
+                    {errors.fechaEgresoReal && <small className="field-error">{errors.fechaEgresoReal}</small>}
                 </label>
             </div>
 
-            <label style={{ display: 'block', marginTop: '1rem' }}>
-                Descripción del Trabajo
-                <textarea
-                    name="descripcion"
-                    value={formData.descripcion}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Detalle de fallas o trabajos a realizar..."
-                    style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', marginTop: '4px' }}
-                />
-            </label>
+            {apiError && <div className="alert alert--error" role="alert">{apiError}</div>}
 
-            {apiError && (
-                <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '6px', marginTop: '1rem' }}>
-                    {apiError}
-                </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+            <div className="form-actions">
                 {isEditing && (
-                    <button type="button" onClick={onCancelEdit} disabled={saving} style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff' }}>
+                    <Button variant="secondary" onClick={onCancelEdit} disabled={saving}>
                         Cancelar
-                    </button>
+                    </Button>
                 )}
-                <button type="submit" disabled={saving} style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600 }}>
+                <Button type="submit" variant="primary" disabled={saving}>
                     {saving ? 'Guardando...' : isEditing ? 'Actualizar Orden' : 'Guardar Orden'}
-                </button>
+                </Button>
             </div>
         </form>
     );

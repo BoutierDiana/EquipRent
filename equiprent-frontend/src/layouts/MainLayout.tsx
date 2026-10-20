@@ -4,11 +4,11 @@ import Sidebar from '../components/common/Sidebar';
 
 export default function MainLayout() {
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#0b1329' }}>
+        <div className="app-shell bg-cyber-grid">
             <Sidebar />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div className="app-shell__main">
                 <Header />
-                <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+                <main className="app-content">
                     <Outlet />
                 </main>
             </div>

@@ -1,35 +1,56 @@
+import { useEffect, useState } from 'react';
+import { apiFetch } from '../../api/apiClient';
+import { isAbortError } from '../../shared/utils/isAbortError';
+
+type NodeStatus = 'checking' | 'online' | 'offline';
+
+const STATUS_LABEL: Record<NodeStatus, string> = {
+    checking: 'Verificando nodo',
+    online: 'Online Node',
+    offline: 'Offline Node',
+};
+
+const HEALTH_INTERVAL_MS = 30_000;
+
 export default function Header() {
+    const [status, setStatus] = useState<NodeStatus>('checking');
+
+    // Sincroniza el indicador con GET /api/health; el cleanup aborta la petición en curso.
+    useEffect(() => {
+        let controller = new AbortController();
+
+        const check = async () => {
+            controller.abort();
+            controller = new AbortController();
+            try {
+                await apiFetch<{ status: string }>('/health', { signal: controller.signal });
+                setStatus('online');
+            } catch (err) {
+                if (!isAbortError(err)) setStatus('offline');
+            }
+        };
+
+        void check();
+        const intervalId = window.setInterval(() => void check(), HEALTH_INTERVAL_MS);
+
+        return () => {
+            window.clearInterval(intervalId);
+            controller.abort();
+        };
+    }, []);
+
     return (
-        <header
-            style={{
-                height: '60px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '0 2rem',
-                backgroundColor: '#19122b',
-                borderBottom: '1px solid #2a1f49',
-            }}
-        >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span style={{ fontSize: '0.9rem', color: '#c4b5fd', fontWeight: 500 }}>
-          Plataforma de Control de Flota
-        </span>
+        <header className="app-header">
+            <div className="app-header__title">
+                <span className="app-header__kicker">Plataforma de Control de Flota</span>
             </div>
 
-            <div>
-        <span
-            style={{
-                fontSize: '0.8rem',
-                padding: '4px 10px',
-                borderRadius: '12px',
-                backgroundColor: '#2a1f49',
-                color: '#ddd6fe',
-                border: '1px solid #4c3875',
-            }}
-        >
-          Sesion activa
-        </span>
+            <div className="app-header__meta">
+                <span className={`node-status node-status--${status}`} role="status" aria-live="polite">
+                    <span className="node-status__dot" aria-hidden="true" />
+                    {STATUS_LABEL[status]}
+                </span>
+                <span className="session-chip">Sesion activa</span>
             </div>
         </header>
     );

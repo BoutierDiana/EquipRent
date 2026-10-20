@@ -1,4 +1,7 @@
+import { Icon } from '../../../components/ui/Icon';
+import { StatusBadge } from '../../../components/ui/StatusBadge';
 import type { UnidadEquipo } from '../models/UnidadEquipo';
+import { ESTADO_OPERATIVO_TONES, estadoOperativoLabel } from '../utils/unidadEquipoFormat';
 
 interface UnidadEquipoTableProps {
     unidades: UnidadEquipo[];
@@ -6,6 +9,8 @@ interface UnidadEquipoTableProps {
     onDelete: (unidad: UnidadEquipo) => void;
     deletingId?: number | null;
 }
+
+const formatoMetrica = new Intl.NumberFormat('es-BO', { maximumFractionDigits: 2 });
 
 export default function UnidadEquipoTable({
                                               unidades,
@@ -23,33 +28,38 @@ export default function UnidadEquipoTable({
                 <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Código</th>
                     <th>Serie</th>
+                    <th>Equipo</th>
                     <th>Estado</th>
-                    <th>Métrica Uso</th>
+                    <th className="num">Métrica Uso</th>
+                    <th>Notas</th>
                     <th>Vigente</th>
-                    <th style={{ textAlign: 'center' }}>Acciones</th>
+                    <th className="actions-col">Acciones</th>
                 </tr>
                 </thead>
                 <tbody>
                 {unidades.map((u) => (
                     <tr key={u.id}>
-                        <td><strong>#{u.id}</strong></td>
-                        <td>{u.codigoInventario}</td>
-                        <td>{u.numeroSerie}</td>
+                        <td className="mono id-cell">#{u.id}</td>
+                        <td className="mono">{u.numeroSerie}</td>
+                        <td className="mono">#{u.equipoId}</td>
                         <td>
-                <span className={`badge estado-${(u as any).estadoOperativo?.toLowerCase() || 'disponible'}`}>
-                  {(u as any).estadoOperativo || 'DISPONIBLE'}
-                </span>
+                            <StatusBadge
+                                active={u.estadoOperativo === 'DISPONIBLE'}
+                                tone={ESTADO_OPERATIVO_TONES[u.estadoOperativo]}
+                                text={estadoOperativoLabel(u.estadoOperativo)}
+                            />
                         </td>
-                        <td>{(u as any).metricaUsoAcumulada ?? 0} hrs/km</td>
-                        <td>{u.activo ? 'Sí' : 'No'}</td>
-                        <td className="actions-cell" style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <td className="num mono">{formatoMetrica.format(u.metricaUsoAcumulada)} h/km</td>
+                        <td className="notes-cell">{u.notasEstado ?? '—'}</td>
+                        <td><StatusBadge active={u.activo} text={u.activo ? 'Sí' : 'No'} /></td>
+                        <td className="actions-cell">
                             <button
                                 type="button"
                                 className="btn-action edit"
                                 onClick={() => onEdit(u.id)}
                             >
+                                <Icon name="edit" size={15} />
                                 Editar
                             </button>
                             <button
@@ -58,6 +68,7 @@ export default function UnidadEquipoTable({
                                 onClick={() => onDelete(u)}
                                 disabled={deletingId === u.id}
                             >
+                                <Icon name="trash" size={15} />
                                 {deletingId === u.id ? 'Eliminando...' : 'Eliminar'}
                             </button>
                         </td>

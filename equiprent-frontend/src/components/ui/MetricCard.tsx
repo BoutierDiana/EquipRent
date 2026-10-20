@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react';
+
 export interface MetricCardProps {
     label: string;
     value: number;
@@ -5,27 +7,15 @@ export interface MetricCardProps {
     color?: string;
 }
 
-export function MetricCard({ label, value, helper, color = '#8b5cf6' }: MetricCardProps) {
+/** Tarjeta de métrica derivada (Guía 10). color define el acento del borde y del valor. */
+export function MetricCard({ label, value, helper, color = 'var(--color-lime)' }: MetricCardProps) {
+    const style = { '--metric-accent': color } as CSSProperties;
+
     return (
-        <article
-            style={{
-                background: '#19122b',
-                padding: '1.4rem',
-                borderRadius: '10px',
-                border: '1px solid #362956',
-                borderLeft: `4px solid ${color}`,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '4px',
-            }}
-        >
-      <span style={{ fontSize: '0.82rem', color: '#a78bfa', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-        {label}
-      </span>
-            <strong style={{ fontSize: '2.2rem', color: '#ffffff', fontWeight: 700 }}>
-                {value}
-            </strong>
-            {helper && <small style={{ color: '#8b7ca8', fontSize: '0.8rem' }}>{helper}</small>}
+        <article className="metric-card" style={style}>
+            <span className="metric-card__label">{label}</span>
+            <strong className="metric-card__value">{value}</strong>
+            {helper && <small className="metric-card__helper">{helper}</small>}
         </article>
     );
 }

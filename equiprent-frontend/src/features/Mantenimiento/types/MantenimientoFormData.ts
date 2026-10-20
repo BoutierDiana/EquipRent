@@ -1,8 +1,2 @@
-export interface MantenimientoFormData {
-    unidadEquipoId: string;
-    fecha: string;
-    descripcion: string;
-    costo: string;
-    tipoMantenimiento: string;
-    activo: boolean;
-}
+// Única definición en MantenimientoRequests.ts; se reexporta para compatibilidad.
+export type { MantenimientoFormData } from './MantenimientoRequests';

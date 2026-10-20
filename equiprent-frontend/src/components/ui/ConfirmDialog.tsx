@@ -20,10 +20,8 @@ export function ConfirmDialog({
                               }: ConfirmDialogProps) {
     return (
         <Modal open={open} title={title} onClose={onCancel}>
-            <p style={{ margin: '0 0 1.5rem 0', color: '#475569', fontSize: '0.95rem' }}>
-                {message}
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <p className="modal__message">{message}</p>
+            <div className="modal__actions">
                 <Button variant="secondary" onClick={onCancel} disabled={confirming}>
                     Cancelar
                 </Button>

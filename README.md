@@ -43,13 +43,29 @@ Construir un sistema web y móvil que permita administrar el catálogo de equipo
 - IA: Spring AI, únicamente como capacidad complementaria
 
 ## 7. Estado actual
-Clase 01: comprensión del problema, análisis de la ficha del proyecto, modelado conceptual del dominio y definición del alcance (v0.1). Todavía no existe código de aplicación ni base de datos física.
+- **Parte 1 (modelado y base de datos, Clases 01–08):** visión, backlog, modelos conceptual/relacional, DER, diccionario, diseño físico, migraciones Flyway V1–V4 y consultas JOIN.
+- **Backend Spring Boot:** CRUD completo de la relación principal `UnidadEquipo 1:N Mantenimiento`, errores 400/404/409 uniformes, Swagger y tests.
+- **Parte 2 (frontend web, Guías 01–10):** React + TypeScript + Vite con CRUD 1:N, búsqueda, filtros, paginación, Dashboard, tests con Vitest y build de producción.
+- **Parte 3 (móvil, React Native + Expo):** en desarrollo.
 
-## 8. Documentación
+## 8. Estructura oficial del repositorio
+
+| Carpeta | Contenido |
+|---|---|
+| `docs/01-vision`, `docs/02-requirements`, `docs/03-decisions` | Visión, glosario, backlog y decisiones (ADR) |
+| `docs/04-model`, `docs/5-database` | Modelos conceptual y relacional, DER, diccionario, diseño físico |
+| `docs/6-postgresql`, `docs/7-dml` | Evidencias de Clase 06 y 07 (pruebas de integridad, consultas DML) |
+| `docs/equiprent-backend` | **Backend oficial** Spring Boot; migraciones en `src/main/resources/db/migration`, JOINs en `db/queries` |
+| `equiprent-frontend` | **Frontend web oficial** React + TypeScript + Vite |
+
+Carpetas de versiones anteriores, conservadas solo como historial y **no** usadas por la aplicación: `EquipRent_Frontend_Guias_01_a_05/`, `EquipRent_Proyecto_Completo/`, `prueba.txt`, `HELP.md`.
+
+Documentación clave:
 - `docs/01-vision/vision-v0.1.md`
 - `docs/01-vision/glossary-v0.1.md`
 - `docs/02-requirements/backlog-v0.1.md`
-- `docs/03-decisions/`
+- `docs/03-decisions/` (ADR-001 contrato y catálogos, ADR-002 Flyway)
+- `docs/equiprent-backend/README.md` y `equiprent-frontend/README.md`
 
 ## 9. Regla de trabajo
 Cada cambio importante debe ser comprensible, trazable y defendible. El repositorio es la fuente de verdad del proyecto.

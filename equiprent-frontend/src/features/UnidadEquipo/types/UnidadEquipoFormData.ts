@@ -1,9 +1,12 @@
+/**
+ * Lo que el usuario está escribiendo. Los números se guardan como string
+ * porque así los entregan los <input>; se convierten después de validar.
+ */
 export interface UnidadEquipoFormData {
-    codigoInventario: string;
+    equipoId: string;
     numeroSerie: string;
-    marca: string;
-    modelo: string;
     estadoOperativo: string;
-    ubicacion: string; // Práctica: campo de ubicación/dirección obligatorio
+    metricaUsoAcumulada: string;
+    notasEstado: string;
     activo: boolean;
 }

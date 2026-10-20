@@ -2,14 +2,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { EmptyState } from '../../../components/ui/EmptyState';
+import { Icon } from '../../../components/ui/Icon';
 import { Pagination } from '../../../components/ui/Pagination';
 import { SearchInput } from '../../../components/ui/SearchInput';
 import { SelectFilter } from '../../../components/ui/SelectFilter';
 import UnidadEquipoForm from '../components/UnidadEquipoForm';
 import UnidadEquipoTable from '../components/UnidadEquipoTable';
 import { useUnidadesEquipo } from '../hooks/useUnidadesEquipo';
-import type { UnidadEquipo } from '../models/UnidadEquipo';
+import { ESTADOS_OPERATIVOS, type UnidadEquipo } from '../models/UnidadEquipo';
 import { unidadEquipoService } from '../services/unidadEquipoService';
+import { estadoOperativoLabel } from '../utils/unidadEquipoFormat';
 
 const PAGE_SIZE_OPTIONS = [
     { value: '5', label: '5 por página' },
@@ -19,10 +21,13 @@ const PAGE_SIZE_OPTIONS = [
 
 const ESTADO_OPTIONS = [
     { value: 'ALL', label: 'Todos los estados' },
-    { value: 'DISPONIBLE', label: 'Disponible' },
-    { value: 'ALQUILADO', label: 'Alquilado' },
-    { value: 'EN_MANTENIMIENTO', label: 'En Mantenimiento' },
-    { value: 'BAJA', label: 'Baja' },
+    ...ESTADOS_OPERATIVOS.map((estado) => ({ value: estado, label: estadoOperativoLabel(estado) })),
+];
+
+const VIGENCIA_OPTIONS = [
+    { value: 'ALL', label: 'Todas' },
+    { value: 'ACTIVE', label: 'Solo vigentes' },
+    { value: 'INACTIVE', label: 'Solo no vigentes' },
 ];
 
 export default function UnidadesPage() {
@@ -37,6 +42,7 @@ export default function UnidadesPage() {
     // Estados de control de UI y filtros (Single Source of Truth)
     const [search, setSearch] = useState('');
     const [estadoFilter, setEstadoFilter] = useState('ALL');
+    const [vigenciaFilter, setVigenciaFilter] = useState('ALL');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(5);
 
@@ -56,47 +62,47 @@ export default function UnidadesPage() {
     // Regla Guía 09: Reiniciar a la página 1 cuando cambia la búsqueda, filtro o tamaño
     useEffect(() => {
         setPage(1);
-    }, [search, estadoFilter, pageSize]);
+    }, [search, estadoFilter, vigenciaFilter, pageSize]);
 
-    // Dato derivado: Filtro compuesto (Búsqueda textual AND Estado)
+    // Dato derivado: Filtro compuesto (Búsqueda textual AND Estado AND Vigencia)
     const filteredUnidades = useMemo(() => {
         const term = search.trim().toLowerCase();
-        return unidades.filter((u: any) => {
+        return unidades.filter((u) => {
             const matchText =
                 !term ||
-                String(u.codigoInventario ?? '').toLowerCase().includes(term) ||
-                String(u.numeroSerie ?? '').toLowerCase().includes(term) ||
-                String(u.marca ?? '').toLowerCase().includes(term) ||
-                String(u.modelo ?? '').toLowerCase().includes(term) ||
-                String(u.ubicacionActual ?? '').toLowerCase().includes(term);
+                u.numeroSerie.toLowerCase().includes(term) ||
+                String(u.id).includes(term) ||
+                String(u.equipoId).includes(term) ||
+                (u.notasEstado ?? '').toLowerCase().includes(term) ||
+                estadoOperativoLabel(u.estadoOperativo).toLowerCase().includes(term);
 
-            const matchEstado =
-                estadoFilter === 'ALL' ||
-                String(u.estadoOperativo ?? '').toUpperCase() === estadoFilter;
+            const matchEstado = estadoFilter === 'ALL' || u.estadoOperativo === estadoFilter;
 
-            return matchText && matchEstado;
+            const matchVigencia =
+                vigenciaFilter === 'ALL' ||
+                (vigenciaFilter === 'ACTIVE' ? u.activo : !u.activo);
+
+            return matchText && matchEstado && matchVigencia;
         });
-    }, [unidades, search, estadoFilter]);
+    }, [unidades, search, estadoFilter, vigenciaFilter]);
 
-    // Dato derivado: Paginación cliente
+    // Dato derivado: Paginación cliente (siempre después de filtrar)
     const totalPages = Math.max(1, Math.ceil(filteredUnidades.length / pageSize));
-    const start = (page - 1) * pageSize;
+    const safePage = Math.min(page, totalPages); // si un DELETE vacía la última página
+    const start = (safePage - 1) * pageSize;
     const visibleUnidades = filteredUnidades.slice(start, start + pageSize);
 
     const handleEdit = async (id: number) => {
         try {
             setLoadingDetail(true);
             setError('');
+            // GET/{id}: copia actual del recurso antes de editar (Guía 06)
             const unidad = await unidadEquipoService.obtenerPorId(id);
             setEditingUnidad(unidad);
             setMostrarFormulario(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
-            setError(
-                err instanceof Error
-                    ? err.message
-                    : 'No se pudo cargar la unidad para edición',
-            );
+            setError(err instanceof Error ? err.message : 'No se pudo cargar la unidad para edición');
         } finally {
             setLoadingDetail(false);
         }
@@ -110,38 +116,27 @@ export default function UnidadesPage() {
         );
         setEditingUnidad(null);
         setMostrarFormulario(false);
-        notifySuccess(
-            mode === 'create'
-                ? 'Unidad creada con éxito.'
-                : 'Unidad actualizada con éxito.',
-        );
+        notifySuccess(mode === 'create' ? 'Unidad creada con éxito.' : 'Unidad actualizada con éxito.');
     };
 
     // ConfirmDialog handler: Reemplaza a window.confirm()
     const handleConfirmDelete = async () => {
         if (!pendingDelete) return;
-        const targetId = pendingDelete.id ?? (pendingDelete as any).unidadEquipoId;
-        if (!targetId) return;
+        const targetId = pendingDelete.id;
 
         try {
             setIsDeleting(true);
             setError('');
             await unidadEquipoService.eliminar(targetId);
-            setUnidades((prev) =>
-                prev.filter(
-                    (item) => (item.id ?? (item as any).unidadEquipoId) !== targetId,
-                ),
-            );
-            if (
-                (editingUnidad?.id ?? (editingUnidad as any)?.unidadEquipoId) ===
-                targetId
-            ) {
+            // La fila desaparece solo después del 204 del backend.
+            setUnidades((prev) => prev.filter((item) => item.id !== targetId));
+            if (editingUnidad?.id === targetId) {
                 setEditingUnidad(null);
                 setMostrarFormulario(false);
             }
             notifySuccess('Unidad eliminada correctamente.');
-            setPendingDelete(null);
         } catch (err) {
+            // 409: la unidad tiene mantenimientos; la fila se conserva y se muestra el motivo.
             setError(
                 err instanceof Error
                     ? err.message
@@ -149,20 +144,13 @@ export default function UnidadesPage() {
             );
         } finally {
             setIsDeleting(false);
+            setPendingDelete(null);
         }
     };
 
     return (
         <section className="feature-page page-stack">
-            <div
-                className="page-heading"
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '1.5rem',
-                }}
-            >
+            <div className="page-heading">
                 <div>
                     <p className="eyebrow">FLOTA Y MAQUINARIA</p>
                     <h1>Unidades de Maquinaria</h1>
@@ -175,49 +163,23 @@ export default function UnidadesPage() {
                         setMostrarFormulario((prev) => !prev);
                     }}
                 >
-                    {mostrarFormulario ? 'Cerrar Formulario' : '+ Nueva Unidad'}
+                    {mostrarFormulario ? (
+                        'Cerrar Formulario'
+                    ) : (
+                        <>
+                            <Icon name="plus" size={16} />
+                            Nueva Unidad
+                        </>
+                    )}
                 </Button>
             </div>
 
-            {successMessage && (
-                <div
-                    style={{
-                        background: '#dcfce7',
-                        color: '#166534',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    {successMessage}
-                </div>
-            )}
+            {successMessage && <div className="alert alert--success" role="status">{successMessage}</div>}
 
-            {error && (
-                <div
-                    className="state-card error"
-                    style={{
-                        padding: '1rem',
-                        background: '#fee2e2',
-                        color: '#991b1b',
-                        borderRadius: '8px',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    {error}
-                </div>
-            )}
+            {error && <div className="state-card error alert alert--error" role="alert">{error}</div>}
 
             {loadingDetail && (
-                <div
-                    className="state-card"
-                    style={{
-                        padding: '0.8rem',
-                        background: '#e0f2fe',
-                        borderRadius: '8px',
-                        marginBottom: '1rem',
-                    }}
-                >
+                <div className="alert alert--info" role="status">
                     Cargando detalle de la maquinaria seleccionada...
                 </div>
             )}
@@ -234,23 +196,11 @@ export default function UnidadesPage() {
             )}
 
             {/* Barra de Búsqueda y Filtros Combinados */}
-            <div
-                style={{
-                    background: '#ffffff',
-                    padding: '1rem',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    alignItems: 'flex-end',
-                    marginBottom: '1rem',
-                }}
-            >
+            <div className="filter-panel">
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder="Código, serie, marca, modelo..."
+                    placeholder="Serie, ID, equipo o notas..."
                     label="Buscar Maquinaria"
                 />
 
@@ -262,6 +212,13 @@ export default function UnidadesPage() {
                 />
 
                 <SelectFilter
+                    label="Vigencia"
+                    value={vigenciaFilter}
+                    options={VIGENCIA_OPTIONS}
+                    onChange={setVigenciaFilter}
+                />
+
+                <SelectFilter
                     label="Registros por página"
                     value={String(pageSize)}
                     options={PAGE_SIZE_OPTIONS}
@@ -270,16 +227,7 @@ export default function UnidadesPage() {
             </div>
 
             {loading ? (
-                <div
-                    className="state-card"
-                    style={{
-                        padding: '1rem',
-                        background: '#f8fafc',
-                        borderRadius: '8px',
-                    }}
-                >
-                    Cargando unidades...
-                </div>
+                <div className="state-card loading" role="status">Cargando unidades...</div>
             ) : filteredUnidades.length === 0 ? (
                 <EmptyState
                     title="No se encontraron maquinarias"
@@ -294,11 +242,7 @@ export default function UnidadesPage() {
                         deletingId={isDeleting ? (pendingDelete?.id ?? null) : null}
                     />
 
-                    <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        onPageChange={setPage}
-                    />
+                    <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
                 </>
             )}
 
@@ -306,7 +250,7 @@ export default function UnidadesPage() {
             <ConfirmDialog
                 open={Boolean(pendingDelete)}
                 title="Eliminar Maquinaria"
-                message={`¿Está seguro de que desea eliminar la unidad ${pendingDelete?.codigoInventario ?? ''}? Esta acción no se puede deshacer.`}
+                message={`¿Está seguro de que desea eliminar la unidad ${pendingDelete?.numeroSerie ?? ''}? Esta acción no se puede deshacer.`}
                 confirming={isDeleting}
                 onConfirm={handleConfirmDelete}
                 onCancel={() => setPendingDelete(null)}

@@ -1,8 +1,3 @@
-export interface UnidadEquipo {
-    id?: number;
-    codigoInventario: string;
-    numeroSerie: string;
-    marca: string;
-    modelo: string;
-    estadoOperativo: string;
-}
+// El contrato vive en models/UnidadEquipo.ts; este archivo lo reexporta
+// para no romper los imports existentes desde types/.
+export type { UnidadEquipo, EstadoOperativo } from '../models/UnidadEquipo';

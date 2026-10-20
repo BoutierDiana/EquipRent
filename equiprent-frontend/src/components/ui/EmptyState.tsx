@@ -1,3 +1,5 @@
+import { Icon } from './Icon';
+
 export function EmptyState({
                                title,
                                description,
@@ -6,21 +8,10 @@ export function EmptyState({
     description?: string;
 }) {
     return (
-        <div
-            role="status"
-            style={{
-                padding: '2.5rem 1.5rem',
-                textAlign: 'center',
-                background: '#f8fafc',
-                borderRadius: '8px',
-                border: '1px dashed #cbd5e1',
-                margin: '1rem 0',
-            }}
-        >
-            <strong style={{ display: 'block', fontSize: '1.1rem', color: '#1e293b', marginBottom: '0.25rem' }}>
-                {title}
-            </strong>
-            {description && <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>{description}</p>}
+        <div role="status" className="empty-state">
+            <Icon name="search" size={28} className="empty-state__icon" />
+            <strong>{title}</strong>
+            {description && <p>{description}</p>}
         </div>
     );
 }

@@ -1,26 +1,38 @@
+import { ESTADOS_OPERATIVOS } from '../models/UnidadEquipo';
 import type { UnidadEquipoFormData } from '../types/UnidadEquipoFormData';
 
 export type UnidadEquipoFormErrors = Partial<Record<keyof UnidadEquipoFormData, string>>;
 
+const esEstadoValido = (valor: string): boolean =>
+    (ESTADOS_OPERATIVOS as readonly string[]).includes(valor);
+
 export function validarUnidadEquipo(data: UnidadEquipoFormData): UnidadEquipoFormErrors {
     const errors: UnidadEquipoFormErrors = {};
 
-    if (!data.codigoInventario.trim()) {
-        errors.codigoInventario = 'El código de inventario es obligatorio.';
-    } else if (data.codigoInventario.trim().length < 4) {
-        errors.codigoInventario = 'El código debe tener al menos 4 caracteres.';
+    const equipoId = Number(data.equipoId);
+    if (!data.equipoId.trim()) {
+        errors.equipoId = 'El ID de equipo es obligatorio.';
+    } else if (!Number.isInteger(equipoId) || equipoId <= 0) {
+        errors.equipoId = 'El ID de equipo debe ser un entero positivo.';
     }
 
-    if (!data.numeroSerie.trim()) {
+    const serie = data.numeroSerie.trim();
+    if (!serie) {
         errors.numeroSerie = 'El número de serie es obligatorio.';
-    } else if (data.numeroSerie.trim().length < 5) { // Regla práctica evaluada
-        errors.numeroSerie = 'El número de serie debe tener al menos 5 caracteres.';
+    } else if (serie.length < 5 || serie.length > 50) {
+        errors.numeroSerie = 'El número de serie debe tener entre 5 y 50 caracteres.';
     }
 
-    if (!data.marca.trim()) errors.marca = 'La marca es obligatoria.';
-    if (!data.modelo.trim()) errors.modelo = 'El modelo es obligatorio.';
-    if (!data.estadoOperativo.trim()) errors.estadoOperativo = 'Seleccione el estado operativo.';
-    if (!data.ubicacion.trim()) errors.ubicacion = 'La ubicación física es obligatoria.';
+    if (!esEstadoValido(data.estadoOperativo)) {
+        errors.estadoOperativo = 'Seleccione un estado operativo válido.';
+    }
+
+    const metrica = Number(data.metricaUsoAcumulada);
+    if (!data.metricaUsoAcumulada.trim()) {
+        errors.metricaUsoAcumulada = 'La métrica de uso es obligatoria.';
+    } else if (Number.isNaN(metrica) || metrica < 0) {
+        errors.metricaUsoAcumulada = 'La métrica de uso debe ser un número mayor o igual a 0.';
+    }
 
     return errors;
 }

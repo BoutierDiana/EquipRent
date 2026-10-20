@@ -1,83 +1,101 @@
+import { Link } from 'react-router';
 import { MetricCard } from '../../../components/ui/MetricCard';
+import { StatusBadge } from '../../../components/ui/StatusBadge';
+import { formatDateTime } from '../../../shared/utils/dates';
+import { useMantenimientos } from '../../Mantenimiento/hooks/useMantenimiento';
+import { TIPO_MANTENIMIENTO_LABELS } from '../../Mantenimiento/models/Mantenimiento';
+import { TIPO_MANTENIMIENTO_TONES } from '../../Mantenimiento/utils/mantenimientoFormat';
 import { useUnidadesEquipo } from '../../UnidadEquipo/hooks/useUnidadesEquipo';
 
 export default function DashboardPage() {
-    const { data: unidades, loading: loadingUnidades, error: errorUnidades } = useUnidadesEquipo();
+    const unidadesState = useUnidadesEquipo();
+    const mantenimientosState = useMantenimientos();
 
-    // Estados derivados calculados en render sin duplicar useState
+    const unidades = unidadesState.data;
+    const mantenimientos = mantenimientosState.data;
+    const loading = unidadesState.loading || mantenimientosState.loading;
+    const error = unidadesState.error || mantenimientosState.error;
+
+    // Estado derivado: se calcula en cada render desde las colecciones; no se guarda en useState.
     const totalMaquinarias = unidades.length;
-    const disponibles = unidades.filter(
-        (u: any) => String(u.estadoOperativo).toUpperCase() === 'DISPONIBLE'
-    ).length;
-    const enMantenimiento = unidades.filter(
-        (u: any) => String(u.estadoOperativo).toUpperCase() === 'EN_MANTENIMIENTO'
-    ).length;
-    const alquiladas = unidades.filter(
-        (u: any) => String(u.estadoOperativo).toUpperCase() === 'ALQUILADO'
-    ).length;
+    const disponibles = unidades.filter((u) => u.estadoOperativo === 'DISPONIBLE').length;
+    const enMantenimiento = unidades.filter((u) => u.estadoOperativo === 'EN_MANTENIMIENTO').length;
+    const enUso = unidades.filter((u) => u.estadoOperativo === 'EN_USO').length;
+    const ordenesAbiertas = mantenimientos.filter((m) => m.estado === 'EN_PROCESO');
+    const correctivas = mantenimientos.filter((m) => m.tipo === 'CORRECTIVO').length;
 
-    if (loadingUnidades) {
-        return (
-            <div style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
-                Cargando indicadores ejecutivos del sistema...
-            </div>
-        );
+    // Relación 1:N resuelta en memoria: serie de la unidad de cada orden abierta.
+    const serieDe = new Map(unidades.map((u) => [u.id, u.numeroSerie]));
+    const proximasSalidas = [...ordenesAbiertas]
+        .sort((a, b) => new Date(a.fechaEgresoEstimada).getTime() - new Date(b.fechaEgresoEstimada).getTime())
+        .slice(0, 5);
+
+    if (loading) {
+        return <div className="state-card loading" role="status">Cargando indicadores ejecutivos del sistema...</div>;
     }
 
-    if (errorUnidades) {
+    if (error) {
         return (
-            <div style={{ padding: '1rem', background: '#fee2e2', color: '#991b1b', borderRadius: '8px' }}>
-                Error al cargar métricas: {errorUnidades}
+            <div className="state-card error alert alert--error" role="alert">
+                Error al cargar métricas: {error}
             </div>
         );
     }
 
     return (
-        <section className="feature-page page-stack" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div>
-                <p className="eyebrow" style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600 }}>
-                    RESUMEN GENERAL
-                </p>
-                <h1 style={{ margin: '4px 0', fontSize: '1.8rem', color: '#0f172a' }}>
-                    Dashboard Ejecutivo
-                </h1>
-                <p style={{ margin: 0, color: '#64748b' }}>
-                    Indicadores clave del estado de la maquinaria y operaciones de taller.
-                </p>
+        <section className="feature-page page-stack">
+            <div className="page-heading">
+                <div>
+                    <p className="eyebrow">RESUMEN GENERAL</p>
+                    <h1>Dashboard Ejecutivo</h1>
+                    <p>Indicadores clave del estado de la maquinaria y operaciones de taller.</p>
+                </div>
             </div>
 
-            <div
-                style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '1rem',
-                }}
-            >
-                <MetricCard
-                    label="Total de Maquinarias"
-                    value={totalMaquinarias}
-                    helper="Flota física registrada"
-                    color="#2563eb"
-                />
-                <MetricCard
-                    label="Unidades Disponibles"
-                    value={disponibles}
-                    helper="Listas para renta"
-                    color="#16a34a"
-                />
-                <MetricCard
-                    label="En Mantenimiento"
-                    value={enMantenimiento}
-                    helper="En taller o servicio técnico"
-                    color="#d97706"
-                />
-                <MetricCard
-                    label="Alquiladas"
-                    value={alquiladas}
-                    helper="En operación con clientes"
-                    color="#9333ea"
-                />
+            <div className="metric-grid">
+                <MetricCard label="Total de Maquinarias" value={totalMaquinarias} helper="Flota física registrada" color="var(--color-purple-400)" />
+                <MetricCard label="Unidades Disponibles" value={disponibles} helper="Listas para renta" color="var(--color-lime)" />
+                <MetricCard label="En Uso" value={enUso} helper="En operación con clientes" color="var(--color-info)" />
+                <MetricCard label="En Mantenimiento" value={enMantenimiento} helper="Bloqueadas en taller" color="var(--color-warning)" />
+                <MetricCard label="Órdenes en Proceso" value={ordenesAbiertas.length} helper="Trabajos de taller abiertos" color="var(--color-warning)" />
+                <MetricCard label="Órdenes Correctivas" value={correctivas} helper="Histórico por fallas" color="var(--color-danger)" />
             </div>
+
+            <section className="panel">
+                <header className="panel__header">
+                    <h2>Próximas salidas de taller</h2>
+                    <Link className="panel__link" to="/mantenimientos">Ver todas las órdenes</Link>
+                </header>
+
+                {proximasSalidas.length === 0 ? (
+                    <p className="muted">No hay órdenes en proceso.</p>
+                ) : (
+                    <div className="table-wrapper">
+                        <table className="data-table">
+                            <thead>
+                            <tr>
+                                <th>Orden</th>
+                                <th>Serie</th>
+                                <th>Tipo</th>
+                                <th>Egreso estimado</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {proximasSalidas.map((m) => (
+                                <tr key={m.id}>
+                                    <td className="mono id-cell">#{m.id}</td>
+                                    <td className="mono">{serieDe.get(m.unidadEquipoId) ?? `Unidad #${m.unidadEquipoId}`}</td>
+                                    <td>
+                                        <StatusBadge active tone={TIPO_MANTENIMIENTO_TONES[m.tipo]} text={TIPO_MANTENIMIENTO_LABELS[m.tipo]} />
+                                    </td>
+                                    <td className="mono">{formatDateTime(m.fechaEgresoEstimada)}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </section>
         </section>
     );
 }

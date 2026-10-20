@@ -2,14 +2,23 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '../../../components/ui/Button';
 import { ConfirmDialog } from '../../../components/ui/ConfirmDialog';
 import { EmptyState } from '../../../components/ui/EmptyState';
+import { Icon } from '../../../components/ui/Icon';
 import { Pagination } from '../../../components/ui/Pagination';
 import { SearchInput } from '../../../components/ui/SearchInput';
 import { SelectFilter } from '../../../components/ui/SelectFilter';
 import { useUnidadesEquipo } from '../../UnidadEquipo/hooks/useUnidadesEquipo';
 import type { UnidadEquipo } from '../../UnidadEquipo/models/UnidadEquipo';
+import { describirUnidad } from '../../UnidadEquipo/utils/unidadEquipoFormat';
 import MantenimientoForm from '../components/MantenimientoForm';
 import MantenimientoTable from '../components/MantenimientoTable';
-import type { Mantenimiento } from '../models/Mantenimiento';
+import { useMantenimientos } from '../hooks/useMantenimiento';
+import {
+    ESTADO_MANTENIMIENTO_LABELS,
+    ESTADOS_MANTENIMIENTO,
+    TIPO_MANTENIMIENTO_LABELS,
+    TIPOS_MANTENIMIENTO,
+    type Mantenimiento,
+} from '../models/Mantenimiento';
 import { mantenimientoService } from '../services/mantenimientoService';
 
 const PAGE_SIZE_OPTIONS = [
@@ -20,9 +29,12 @@ const PAGE_SIZE_OPTIONS = [
 
 const TIPO_OPTIONS = [
     { value: 'ALL', label: 'Todos los tipos' },
-    { value: 'PREVENTIVO', label: 'Preventivo' },
-    { value: 'CORRECTIVO', label: 'Correctivo' },
-    { value: 'INSPECCION', label: 'Inspección' },
+    ...TIPOS_MANTENIMIENTO.map((tipo) => ({ value: tipo, label: TIPO_MANTENIMIENTO_LABELS[tipo] })),
+];
+
+const ESTADO_OPTIONS = [
+    { value: 'ALL', label: 'Todos los estados' },
+    ...ESTADOS_MANTENIMIENTO.map((estado) => ({ value: estado, label: ESTADO_MANTENIMIENTO_LABELS[estado] })),
 ];
 
 export default function MantenimientosPage() {
@@ -32,20 +44,31 @@ export default function MantenimientosPage() {
         error: errorUnidades,
     } = useUnidadesEquipo();
 
-    const [mantenimientos, setMantenimientos] = useState<Mantenimiento[]>([]);
+    // Filtro por entidad padre: cambia la petición (GET /mantenimientos/unidad-equipo/{id}).
+    // Al cambiar, useAsyncList aborta la petición anterior con AbortController.
+    const [filtroUnidadId, setFiltroUnidadId] = useState('ALL');
+    const unidadSeleccionada = filtroUnidadId === 'ALL' ? undefined : Number(filtroUnidadId);
+
+    const {
+        data: mantenimientos,
+        setData: setMantenimientos,
+        loading: loadingMantenimientos,
+        error: errorMantenimientos,
+    } = useMantenimientos(unidadSeleccionada);
+
     const [editingMantenimiento, setEditingMantenimiento] = useState<Mantenimiento | null>(null);
 
     // Filtros combinados y paginación
     const [search, setSearch] = useState('');
     const [tipoFilter, setTipoFilter] = useState('ALL');
-    const [filtroUnidadId, setFiltroUnidadId] = useState('ALL');
+    const [estadoFilter, setEstadoFilter] = useState('ALL');
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(5);
 
     // Estados de eliminación modal y feedback
     const [pendingDelete, setPendingDelete] = useState<Mantenimiento | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [savingDetail, setSavingDetail] = useState(false);
+    const [loadingDetail, setLoadingDetail] = useState(false);
     const [pageError, setPageError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -55,74 +78,69 @@ export default function MantenimientosPage() {
         window.setTimeout(() => setSuccessMessage(''), 3000);
     };
 
-    // Mapa en memoria O(1) de unidades para búsqueda por máquina y resolución
-    const unidadMap = useMemo(() => {
-        return new Map<number, UnidadEquipo>(unidades.map((u) => [u.id, u]));
-    }, [unidades]);
+    // Mapa en memoria O(1) de unidades para búsqueda por máquina
+    const unidadMap = useMemo(
+        () => new Map<number, UnidadEquipo>(unidades.map((u) => [u.id, u])),
+        [unidades],
+    );
 
     // Opciones dinámicas para el selector de filtro por maquinaria
-    const opcionesUnidades = useMemo(() => {
-        return [
+    const opcionesUnidades = useMemo(
+        () => [
             { value: 'ALL', label: 'Todas las maquinarias' },
-            ...unidades.map((u) => ({
-                value: String(u.id),
-                label: `${u.codigoInventario} (${u.marca} ${u.modelo})`,
-            })),
-        ];
-    }, [unidades]);
+            ...unidades.map((u) => ({ value: String(u.id), label: describirUnidad(u) })),
+        ],
+        [unidades],
+    );
 
     // Reiniciar a página 1 al alterar cualquier control de filtrado
     useEffect(() => {
         setPage(1);
-    }, [search, tipoFilter, filtroUnidadId, pageSize]);
+    }, [search, tipoFilter, estadoFilter, filtroUnidadId, pageSize]);
 
-    // Filtros combinados: Búsqueda textual (incluye datos de la máquina vinculada) + Tipo + Maquinaria
+    // Filtros combinados: texto (incluye la serie de la unidad padre) AND tipo AND estado AND unidad
     const filteredMantenimientos = useMemo(() => {
         const term = search.trim().toLowerCase();
 
-        return mantenimientos.filter((item: any) => {
-            const uId = item.unidadEquipoId ?? item.unidadEquipo?.id;
-            const u = uId ? unidadMap.get(uId) : null;
-            const infoMaquinaria = u ? `${u.codigoInventario} ${u.marca} ${u.modelo}` : '';
+        return mantenimientos.filter((item) => {
+            const unidad = unidadMap.get(item.unidadEquipoId);
+            const texto = [
+                String(item.id),
+                unidad?.numeroSerie ?? '',
+                TIPO_MANTENIMIENTO_LABELS[item.tipo],
+                ESTADO_MANTENIMIENTO_LABELS[item.estado],
+            ]
+                .join(' ')
+                .toLowerCase();
 
-            const matchText =
-                !term ||
-                String(item.id ?? '').includes(term) ||
-                String(item.descripcion ?? '').toLowerCase().includes(term) ||
-                infoMaquinaria.toLowerCase().includes(term);
+            const matchText = !term || texto.includes(term);
+            const matchTipo = tipoFilter === 'ALL' || item.tipo === tipoFilter;
+            const matchEstado = estadoFilter === 'ALL' || item.estado === estadoFilter;
+            // Se mantiene en local para ocultar una orden recién creada en otra unidad.
+            const matchUnidad = unidadSeleccionada === undefined || item.unidadEquipoId === unidadSeleccionada;
 
-            const matchTipo =
-                tipoFilter === 'ALL' ||
-                String(item.tipo ?? item.tipoMantenimiento ?? '').toUpperCase() === tipoFilter;
-
-            const matchUnidad =
-                filtroUnidadId === 'ALL' || String(uId) === filtroUnidadId;
-
-            return matchText && matchTipo && matchUnidad;
+            return matchText && matchTipo && matchEstado && matchUnidad;
         });
-    }, [mantenimientos, search, tipoFilter, filtroUnidadId, unidadMap]);
+    }, [mantenimientos, search, tipoFilter, estadoFilter, unidadSeleccionada, unidadMap]);
 
     // Paginación cliente
     const totalPages = Math.max(1, Math.ceil(filteredMantenimientos.length / pageSize));
-    const start = (page - 1) * pageSize;
+    const safePage = Math.min(page, totalPages);
+    const start = (safePage - 1) * pageSize;
     const visibleMantenimientos = filteredMantenimientos.slice(start, start + pageSize);
 
     const handleEdit = async (id: number) => {
         try {
-            setSavingDetail(true);
+            setLoadingDetail(true);
             setPageError('');
             const detalle = await mantenimientoService.obtenerPorId(id);
             setEditingMantenimiento(detalle);
             setMostrarFormulario(true);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (err) {
-            setPageError(
-                err instanceof Error
-                    ? err.message
-                    : 'No se pudo cargar el detalle de la orden',
-            );
+            setPageError(err instanceof Error ? err.message : 'No se pudo cargar el detalle de la orden');
         } finally {
-            setSavingDetail(false);
+            setLoadingDetail(false);
         }
     };
 
@@ -134,49 +152,37 @@ export default function MantenimientosPage() {
         );
         setEditingMantenimiento(null);
         setMostrarFormulario(false);
-        notifySuccess(
-            mode === 'create'
-                ? 'Orden registrada con éxito.'
-                : 'Orden actualizada con éxito.',
-        );
+        notifySuccess(mode === 'create' ? 'Orden registrada con éxito.' : 'Orden actualizada con éxito.');
     };
 
     const handleConfirmDelete = async () => {
         if (!pendingDelete) return;
+        const targetId = pendingDelete.id;
 
         try {
             setIsDeleting(true);
             setPageError('');
-            await mantenimientoService.eliminar(pendingDelete.id);
-            setMantenimientos((prev) => prev.filter((m) => m.id !== pendingDelete.id));
-            if (editingMantenimiento?.id === pendingDelete.id) {
+            await mantenimientoService.eliminar(targetId);
+            setMantenimientos((prev) => prev.filter((m) => m.id !== targetId));
+            if (editingMantenimiento?.id === targetId) {
                 setEditingMantenimiento(null);
                 setMostrarFormulario(false);
             }
             notifySuccess('Orden eliminada correctamente.');
-            setPendingDelete(null);
         } catch (err) {
-            setPageError(
-                err instanceof Error ? err.message : 'No se pudo eliminar la orden',
-            );
+            setPageError(err instanceof Error ? err.message : 'No se pudo eliminar la orden');
         } finally {
             setIsDeleting(false);
+            setPendingDelete(null);
         }
     };
 
-    const errorTotal = pageError || errorUnidades;
+    const loading = loadingUnidades || loadingMantenimientos;
+    const errorTotal = pageError || errorMantenimientos || errorUnidades;
 
     return (
         <section className="feature-page page-stack">
-            <div
-                className="page-heading"
-                style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '1.5rem',
-                }}
-            >
+            <div className="page-heading">
                 <div>
                     <p className="eyebrow">TALLER Y MANTENIMIENTO</p>
                     <h1>Órdenes de Mantenimiento</h1>
@@ -189,51 +195,23 @@ export default function MantenimientosPage() {
                         setMostrarFormulario((prev) => !prev);
                     }}
                 >
-                    {mostrarFormulario ? 'Cerrar Formulario' : '+ Nueva Orden'}
+                    {mostrarFormulario ? (
+                        'Cerrar Formulario'
+                    ) : (
+                        <>
+                            <Icon name="plus" size={16} />
+                            Nueva Orden
+                        </>
+                    )}
                 </Button>
             </div>
 
-            {successMessage && (
-                <div
-                    style={{
-                        background: '#dcfce7',
-                        color: '#166534',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    {successMessage}
-                </div>
-            )}
+            {successMessage && <div className="alert alert--success" role="status">{successMessage}</div>}
 
-            {errorTotal && (
-                <div
-                    className="state-card error"
-                    style={{
-                        padding: '1rem',
-                        background: '#fee2e2',
-                        color: '#991b1b',
-                        borderRadius: '8px',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    {errorTotal}
-                </div>
-            )}
+            {errorTotal && <div className="state-card error alert alert--error" role="alert">{errorTotal}</div>}
 
-            {savingDetail && (
-                <div
-                    className="state-card"
-                    style={{
-                        padding: '0.8rem',
-                        background: '#e0f2fe',
-                        borderRadius: '8px',
-                        marginBottom: '1rem',
-                    }}
-                >
-                    Cargando detalle de la orden seleccionada...
-                </div>
+            {loadingDetail && (
+                <div className="alert alert--info" role="status">Cargando detalle de la orden seleccionada...</div>
             )}
 
             {mostrarFormulario && (
@@ -249,23 +227,11 @@ export default function MantenimientosPage() {
             )}
 
             {/* Barra de Filtros Combinados */}
-            <div
-                style={{
-                    background: '#ffffff',
-                    padding: '1rem',
-                    borderRadius: '8px',
-                    border: '1px solid #e2e8f0',
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '1rem',
-                    alignItems: 'flex-end',
-                    marginBottom: '1rem',
-                }}
-            >
+            <div className="filter-panel">
                 <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder="ID, descripción, marca o modelo..."
+                    placeholder="ID, serie, tipo o estado..."
                     label="Buscar Orden"
                 />
 
@@ -276,12 +242,9 @@ export default function MantenimientosPage() {
                     onChange={setFiltroUnidadId}
                 />
 
-                <SelectFilter
-                    label="Tipo de Servicio"
-                    value={tipoFilter}
-                    options={TIPO_OPTIONS}
-                    onChange={setTipoFilter}
-                />
+                <SelectFilter label="Tipo de Servicio" value={tipoFilter} options={TIPO_OPTIONS} onChange={setTipoFilter} />
+
+                <SelectFilter label="Estado de la Orden" value={estadoFilter} options={ESTADO_OPTIONS} onChange={setEstadoFilter} />
 
                 <SelectFilter
                     label="Registros por página"
@@ -291,21 +254,12 @@ export default function MantenimientosPage() {
                 />
             </div>
 
-            {loadingUnidades ? (
-                <div
-                    className="state-card"
-                    style={{
-                        padding: '1rem',
-                        background: '#f8fafc',
-                        borderRadius: '8px',
-                    }}
-                >
-                    Cargando registros...
-                </div>
+            {loading ? (
+                <div className="state-card loading" role="status">Cargando registros...</div>
             ) : filteredMantenimientos.length === 0 ? (
                 <EmptyState
                     title="No se encontraron órdenes de mantenimiento"
-                    description="Pruebe cambiando los filtros de tipo, maquinaria o el texto de búsqueda."
+                    description="Pruebe cambiando los filtros de tipo, estado, maquinaria o el texto de búsqueda."
                 />
             ) : (
                 <>
@@ -317,11 +271,7 @@ export default function MantenimientosPage() {
                         deletingId={isDeleting ? (pendingDelete?.id ?? null) : null}
                     />
 
-                    <Pagination
-                        page={page}
-                        totalPages={totalPages}
-                        onPageChange={setPage}
-                    />
+                    <Pagination page={safePage} totalPages={totalPages} onPageChange={setPage} />
                 </>
             )}
 

@@ -1,7 +1,10 @@
 import { useEffect, useState, type ChangeEvent, type SyntheticEvent } from 'react';
-import type { UnidadEquipo } from '../models/UnidadEquipo';
+import { Button } from '../../../components/ui/Button';
+import { ESTADOS_OPERATIVOS, type EstadoOperativo, type UnidadEquipo } from '../models/UnidadEquipo';
 import { unidadEquipoService } from '../services/unidadEquipoService';
 import type { UnidadEquipoCreateRequest } from '../types/UnidadEquipoCreateRequest';
+import type { UnidadEquipoFormData } from '../types/UnidadEquipoFormData';
+import { estadoOperativoLabel } from '../utils/unidadEquipoFormat';
 import { validarUnidadEquipo, type UnidadEquipoFormErrors } from '../utils/unidadEquipoValidation';
 
 interface UnidadEquipoFormProps {
@@ -10,36 +13,30 @@ interface UnidadEquipoFormProps {
     onCancelEdit?: () => void;
 }
 
-export interface UnidadEquipoFormState {
-    equipoId: string;
-    codigoInventario: string;
-    numeroSerie: string;
-    marca: string;
-    modelo: string;
-    estadoOperativo: string;
-    ubicacion: string;
-    metricaUsoAcum: string;
-    activo: boolean;
-}
-
-const initialForm: UnidadEquipoFormState = {
+const initialForm: UnidadEquipoFormData = {
     equipoId: '1',
-    codigoInventario: '',
     numeroSerie: '',
-    marca: '',
-    modelo: '',
     estadoOperativo: 'DISPONIBLE',
-    ubicacion: '',
-    metricaUsoAcum: '0',
+    metricaUsoAcumulada: '0',
+    notasEstado: '',
     activo: true,
 };
+
+const toFormData = (unidad: UnidadEquipo): UnidadEquipoFormData => ({
+    equipoId: String(unidad.equipoId),
+    numeroSerie: unidad.numeroSerie,
+    estadoOperativo: unidad.estadoOperativo,
+    metricaUsoAcumulada: String(unidad.metricaUsoAcumulada),
+    notasEstado: unidad.notasEstado ?? '',
+    activo: unidad.activo,
+});
 
 export default function UnidadEquipoForm({
                                              unidad,
                                              onSaved,
                                              onCancelEdit,
                                          }: UnidadEquipoFormProps) {
-    const [formData, setFormData] = useState<UnidadEquipoFormState>(initialForm);
+    const [formData, setFormData] = useState<UnidadEquipoFormData>(initialForm);
     const [errors, setErrors] = useState<UnidadEquipoFormErrors>({});
     const [mensaje, setMensaje] = useState('');
     const [apiError, setApiError] = useState('');
@@ -47,28 +44,15 @@ export default function UnidadEquipoForm({
 
     const isEditing = Boolean(unidad);
 
+    // Sincroniza el estado editable cuando cambia la unidad a editar (no hace HTTP).
     useEffect(() => {
-        if (unidad) {
-            setFormData({
-                equipoId: String((unidad as any).equipoId ?? 1),
-                codigoInventario: unidad.codigoInventario ?? '',
-                numeroSerie: unidad.numeroSerie ?? '',
-                marca: (unidad as any).marca ?? '',
-                modelo: (unidad as any).modelo ?? '',
-                estadoOperativo: (unidad as any).estadoOperativo ?? 'DISPONIBLE',
-                ubicacion: (unidad as any).ubicacion ?? '',
-                metricaUsoAcum: String((unidad as any).metricaUsoAcumulada ?? 0),
-                activo: Boolean(unidad.activo),
-            });
-        } else {
-            setFormData(initialForm);
-        }
+        setFormData(unidad ? toFormData(unidad) : initialForm);
         setErrors({});
         setApiError('');
         setMensaje('');
     }, [unidad]);
 
-    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const target = e.target;
         const { name, value } = target;
 
@@ -85,26 +69,26 @@ export default function UnidadEquipoForm({
         setMensaje('');
         setApiError('');
 
-        const validationErrors = validarUnidadEquipo(formData as any);
+        const validationErrors = validarUnidadEquipo(formData);
         setErrors(validationErrors);
         if (Object.keys(validationErrors).length > 0) return;
 
+        // Conversión a tipos de dominio solo después de validar.
         const payload: UnidadEquipoCreateRequest = {
             equipoId: Number(formData.equipoId),
-            codigoInventario: formData.codigoInventario.trim().toUpperCase(),
             numeroSerie: formData.numeroSerie.trim().toUpperCase(),
-            marca: formData.marca.trim(),
-            modelo: formData.modelo.trim(),
-            estadoOperativo: formData.estadoOperativo,
-            ubicacion: formData.ubicacion.trim(),
-            metricaUsoAcumulada: Number(formData.metricaUsoAcum),
-            activo: formData.activo,
+            estadoOperativo: formData.estadoOperativo as EstadoOperativo,
+            metricaUsoAcumulada: Number(formData.metricaUsoAcumulada),
+            notasEstado: formData.notasEstado.trim() || null,
         };
 
         try {
             setSaving(true);
             if (unidad) {
-                const actualizada = await unidadEquipoService.actualizar(unidad.id, payload);
+                const actualizada = await unidadEquipoService.actualizar(unidad.id, {
+                    ...payload,
+                    activo: formData.activo,
+                });
                 onSaved(actualizada, 'edit');
                 setMensaje('Unidad actualizada exitosamente.');
             } else {
@@ -120,6 +104,13 @@ export default function UnidadEquipoForm({
         }
     };
 
+    const limpiar = () => {
+        setFormData(isEditing && unidad ? toFormData(unidad) : initialForm);
+        setErrors({});
+        setMensaje('');
+        setApiError('');
+    };
+
     return (
         <form className="entity-form" onSubmit={handleSubmit} noValidate>
             <h3>{isEditing ? `Editar Unidad de Maquinaria #${unidad?.id}` : 'Registrar Nueva Unidad'}</h3>
@@ -130,127 +121,93 @@ export default function UnidadEquipoForm({
                     <input
                         type="number"
                         name="equipoId"
+                        min={1}
                         value={formData.equipoId}
                         onChange={handleChange}
                         placeholder="1"
                     />
-                </label>
-
-                <label>
-                    Métrica de Uso Inicial (Horas/Km)
-                    <input
-                        type="number"
-                        name="metricaUsoAcum"
-                        value={formData.metricaUsoAcum}
-                        onChange={handleChange}
-                        placeholder="0"
-                    />
-                </label>
-
-                <label>
-                    Código de Inventario
-                    <input
-                        name="codigoInventario"
-                        value={formData.codigoInventario}
-                        onChange={handleChange}
-                        placeholder="Ej. CAT-001"
-                    />
-                    {errors.codigoInventario && <small className="field-error">{errors.codigoInventario}</small>}
+                    {errors.equipoId && <small className="field-error">{errors.equipoId}</small>}
                 </label>
 
                 <label>
                     Número de Serie
                     <input
                         name="numeroSerie"
+                        className="mono"
                         value={formData.numeroSerie}
                         onChange={handleChange}
-                        placeholder="Nro de chasis o serie"
+                        placeholder="Ej. SN-MAK-000124"
                     />
                     {errors.numeroSerie && <small className="field-error">{errors.numeroSerie}</small>}
                 </label>
 
                 <label>
-                    Marca
-                    <input name="marca" value={formData.marca} onChange={handleChange} />
-                    {errors.marca && <small className="field-error">{errors.marca}</small>}
-                </label>
-
-                <label>
-                    Modelo
-                    <input name="modelo" value={formData.modelo} onChange={handleChange} />
-                    {errors.modelo && <small className="field-error">{errors.modelo}</small>}
-                </label>
-
-                <label>
                     Estado Operativo
                     <select name="estadoOperativo" value={formData.estadoOperativo} onChange={handleChange}>
-                        <option value="DISPONIBLE">DISPONIBLE</option>
-                        <option value="EN_TALLER">EN TALLER</option>
-                        <option value="EN_REVISION">EN REVISIÓN</option>
+                        {ESTADOS_OPERATIVOS.map((estado) => (
+                            <option key={estado} value={estado}>
+                                {estadoOperativoLabel(estado)}
+                            </option>
+                        ))}
                     </select>
                     {errors.estadoOperativo && <small className="field-error">{errors.estadoOperativo}</small>}
                 </label>
 
                 <label>
-                    Ubicación Física / Depósito
+                    Métrica de Uso Acumulada (Horas/Km)
                     <input
-                        name="ubicacion"
-                        value={formData.ubicacion}
+                        type="number"
+                        name="metricaUsoAcumulada"
+                        min={0}
+                        step="0.01"
+                        value={formData.metricaUsoAcumulada}
                         onChange={handleChange}
-                        placeholder="Ej. Taller Central"
+                        placeholder="0"
                     />
-                    {errors.ubicacion && <small className="field-error">{errors.ubicacion}</small>}
+                    {errors.metricaUsoAcumulada && (
+                        <small className="field-error">{errors.metricaUsoAcumulada}</small>
+                    )}
                 </label>
 
-                <label className="checkbox-field form-span-2">
-                    <input
-                        type="checkbox"
-                        name="activo"
-                        checked={formData.activo}
+                <label className="form-span-2">
+                    Notas de Estado
+                    <textarea
+                        name="notasEstado"
+                        rows={2}
+                        value={formData.notasEstado}
                         onChange={handleChange}
+                        placeholder="Observaciones mecánicas o estéticas (opcional)"
                     />
-                    Unidad Vigente / Activa
                 </label>
+
+                {isEditing && (
+                    <label className="checkbox-field form-span-2">
+                        <input
+                            type="checkbox"
+                            name="activo"
+                            checked={formData.activo}
+                            onChange={handleChange}
+                        />
+                        Unidad Vigente / Activa
+                    </label>
+                )}
             </div>
 
-            {apiError && (
-                <div style={{ background: '#fee2e2', color: '#991b1b', padding: '10px', borderRadius: '8px', marginTop: '12px' }}>
-                    {apiError}
-                </div>
-            )}
-            {mensaje && (
-                <div style={{ background: '#dcfce7', color: '#166534', padding: '10px', borderRadius: '8px', marginTop: '12px' }}>
-                    {mensaje}
-                </div>
-            )}
+            {apiError && <div className="alert alert--error" role="alert">{apiError}</div>}
+            {mensaje && <div className="alert alert--success" role="status">{mensaje}</div>}
 
-            <div className="form-actions" style={{ display: 'flex', gap: '8px', marginTop: '1rem', justifyContent: 'flex-end' }}>
+            <div className="form-actions">
                 {isEditing && (
-                    <button
-                        type="button"
-                        className="btn-secondary"
-                        onClick={onCancelEdit}
-                        disabled={saving}
-                    >
+                    <Button variant="secondary" onClick={onCancelEdit} disabled={saving}>
                         Cancelar Edición
-                    </button>
+                    </Button>
                 )}
-                <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => {
-                        setFormData(initialForm);
-                        setErrors({});
-                        setMensaje('');
-                        setApiError('');
-                    }}
-                    disabled={saving}
-                >
+                <Button variant="ghost" onClick={limpiar} disabled={saving}>
                     Limpiar
-                </button>
-                <button type="submit" className="btn-primary" disabled={saving}>
+                </Button>
+                <Button type="submit" variant="primary" disabled={saving}>
                     {saving ? 'Guardando...' : isEditing ? 'Actualizar Unidad' : 'Guardar Unidad'}
-                </button>
+                </Button>
             </div>
         </form>
     );

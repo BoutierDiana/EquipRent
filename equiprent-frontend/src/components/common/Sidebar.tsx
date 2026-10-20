@@ -1,53 +1,54 @@
 import { NavLink } from 'react-router';
+import { Icon, type IconName } from '../ui/Icon';
+
+interface NavItem {
+    to: string;
+    label: string;
+    icon: IconName;
+    end?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+    { to: '/', label: 'Dashboard', icon: 'dashboard', end: true },
+    { to: '/unidades', label: 'Unidades de Maquinaria', icon: 'unit' },
+    { to: '/mantenimientos', label: 'Mantenimientos', icon: 'wrench' },
+    { to: '/acerca', label: 'Acerca de', icon: 'info' },
+];
 
 export default function Sidebar() {
     return (
-        <aside
-            style={{
-                width: '240px',
-                backgroundColor: '#130d24',
-                borderRight: '1px solid #2a1f49',
-                padding: '1.5rem 1rem',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '1.5rem',
-            }}
-        >
-            <div style={{ padding: '0 8px' }}>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: '#c4b5fd', letterSpacing: '0.03em' }}>
-                    EquipRent
-                </h2>
-                <span style={{ fontSize: '0.75rem', color: '#8b7ca8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          SISTEMA DE GESTION
-        </span>
+        <aside className="sidebar">
+            <div className="sidebar__brand">
+                <span className="sidebar__logo">
+                    <Icon name="logo" size={22} />
+                </span>
+                <div>
+                    <h2>EquipRent</h2>
+                    <span className="sidebar__tagline">SISTEMA DE GESTION</span>
+                </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#7c6f9e', paddingLeft: '8px', textTransform: 'uppercase' }}>
-          Menu
-        </span>
+            <div className="sidebar__section">
+                <span className="sidebar__section-title">Menu</span>
 
-                <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <NavLink
-                        to="/"
-                        end
-                        className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
-                    >
-                        Dashboard
-                    </NavLink>
-                    <NavLink
-                        to="/unidades"
-                        className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
-                    >
-                        Unidades de Maquinaria
-                    </NavLink>
-                    <NavLink
-                        to="/mantenimientos"
-                        className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
-                    >
-                        Mantenimientos
-                    </NavLink>
+                <nav className="sidebar__nav" aria-label="Navegación principal">
+                    {NAV_ITEMS.map((item) => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            end={item.end}
+                            className={({ isActive }) => `nav-link-item ${isActive ? 'active' : ''}`}
+                        >
+                            <Icon name={item.icon} size={18} />
+                            {item.label}
+                        </NavLink>
+                    ))}
                 </nav>
+            </div>
+
+            <div className="sidebar__footer">
+                <span className="pixel">v1.0.0</span>
+                <span className="mono">UnidadEquipo 1:N Mantenimiento</span>
             </div>
         </aside>
     );
