@@ -1,5 +1,11 @@
 # Modelo físico v0.1 — EquipRent
 
+> **Nota de alineación (Fase 2, 2026-10-20).** Este diseño físico v0.1 es previo a la implementación. La fuente de verdad del esquema vigente son las migraciones Flyway en `docs/equiprent-backend/src/main/resources/db/migration/` (V1 a V4). Diferencias principales respecto de lo escrito abajo:
+> - Las PK se llaman `<tabla>_id` (por ejemplo `unidad_equipo_id`), no `id`.
+> - `unidad_equipo` no tiene `codigo_inventario` ni `fecha_adquisicion`; su clave natural UNIQUE es `numero_serie`, y el estado se llama `estado_operativo` con el catálogo `DISPONIBLE, RESERVADA, EN_USO, EN_MANTENIMIENTO, DE_BAJA` (CHECK en V3).
+> - `mantenimiento.estado` usa `EN_PROCESO, COMPLETADO, CANCELADO` (CHECK en V3).
+
+
 Núcleo del primer flujo crítico: un cliente reserva una unidad física de un equipo perteneciente a una
 categoría. Este V1 cubre catálogo (categoría → equipo → unidad) + actor (cliente) + transacción raíz (reserva).
 

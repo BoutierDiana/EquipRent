@@ -108,3 +108,77 @@ INNER JOIN equiprent.cliente c
 LEFT JOIN equiprent.deposito d
     ON d.reserva_id = r.reserva_id
 ORDER BY r.fecha_inicio_programada;
+
+-- =============================================================================
+-- Relación principal del proyecto: unidad_equipo 1:N mantenimiento
+-- FK: mantenimiento.unidad_equipo_id -> unidad_equipo.unidad_equipo_id (ON DELETE RESTRICT)
+-- Datos de prueba: V4__seed_mantenimiento.sql
+-- =============================================================================
+
+-- Q7. ¿Qué órdenes de mantenimiento existen y a qué unidad física pertenece cada una?
+-- Relaciones: mantenimiento.unidad_equipo_id -> unidad_equipo.unidad_equipo_id
+-- Cada fila representa: Una orden de taller con el número de serie y estado actual de su unidad.
+-- Predicción: tantas filas como órdenes existan (INNER JOIN nunca descarta órdenes, porque la FK es NOT NULL).
+SELECT
+    m.mantenimiento_id,
+    m.tipo,
+    m.estado AS estado_orden,
+    m.fecha_ingreso,
+    m.fecha_egreso_estimada,
+    u.unidad_equipo_id,
+    u.numero_serie,
+    u.estado_operativo
+FROM equiprent.mantenimiento m
+INNER JOIN equiprent.unidad_equipo u
+    ON u.unidad_equipo_id = m.unidad_equipo_id
+ORDER BY m.fecha_ingreso DESC;
+
+
+-- Q8. ¿Qué órdenes abiertas tiene cada modelo de equipo? (JOIN encadenado de tres tablas)
+-- Relaciones: mantenimiento.unidad_equipo_id -> unidad_equipo.unidad_equipo_id
+--             unidad_equipo.equipo_id -> equipo.equipo_id
+-- Cada fila representa: Una orden EN_PROCESO con la unidad física y el modelo comercial al que pertenece.
+SELECT
+    e.codigo_modelo,
+    e.nombre AS modelo_equipo,
+    u.numero_serie,
+    m.mantenimiento_id,
+    m.tipo,
+    m.fecha_egreso_estimada
+FROM equiprent.mantenimiento m
+INNER JOIN equiprent.unidad_equipo u
+    ON u.unidad_equipo_id = m.unidad_equipo_id
+INNER JOIN equiprent.equipo e
+    ON e.equipo_id = u.equipo_id
+WHERE m.estado = 'EN_PROCESO'
+ORDER BY m.fecha_egreso_estimada;
+
+
+-- Q9. ¿Qué unidades físicas NO tienen ningún mantenimiento registrado?
+-- Relaciones: unidad_equipo.unidad_equipo_id <- mantenimiento.unidad_equipo_id
+-- Cada fila representa: Una unidad sin historial de taller (con V4: SN-HON-000302).
+-- Por qué LEFT JOIN: el INNER JOIN eliminaría justamente las unidades sin coincidencia;
+-- el filtro IS NULL va en WHERE, no en ON, para quedarse solo con esas filas.
+SELECT
+    u.unidad_equipo_id,
+    u.numero_serie,
+    u.estado_operativo
+FROM equiprent.unidad_equipo u
+LEFT JOIN equiprent.mantenimiento m
+    ON m.unidad_equipo_id = u.unidad_equipo_id
+WHERE m.mantenimiento_id IS NULL
+ORDER BY u.numero_serie;
+
+
+-- Q10. ¿Cuántas órdenes tiene cada unidad, por estado? (LEFT JOIN + agregación)
+-- Cada fila representa: Una unidad con el conteo de sus órdenes; las unidades sin órdenes aparecen con 0.
+SELECT
+    u.numero_serie,
+    COUNT(m.mantenimiento_id)                                    AS total_ordenes,
+    COUNT(m.mantenimiento_id) FILTER (WHERE m.estado = 'EN_PROCESO') AS en_proceso,
+    COUNT(m.mantenimiento_id) FILTER (WHERE m.estado = 'COMPLETADO') AS completadas
+FROM equiprent.unidad_equipo u
+LEFT JOIN equiprent.mantenimiento m
+    ON m.unidad_equipo_id = u.unidad_equipo_id
+GROUP BY u.numero_serie
+ORDER BY total_ordenes DESC, u.numero_serie;

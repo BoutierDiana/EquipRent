@@ -32,7 +32,7 @@
 | `unidad_equipo_id` | Identificador técnico del activo físico. | Sí (NN) | **PK** | UUID / BIGINT estable. | Diseño técnico |
 | `equipo_id` | Modelo de catálogo al que corresponde la unidad. | Sí (NN) | **FK** -> `equipo` | Clave foránea válida. | RN-01, RF-02 |
 | `numero_serie` | Serie de fábrica o placa patrimonial física. | Sí (NN) | **UQ (Global)** | Texto alfanumérico irrepetible. | RN-01, RF-02 |
-| `estado_operativo` | Estado operativo actual del activo. | Sí (NN) | Ninguno | `'DISPONIBLE'`, `'RESERVADA'`, `'EN_USO'`, `'EN_MANTENIMIENTO'`, `'DE_BAJA'` | RN-01, RN-07 |
+| `estado_operativo` | Estado operativo actual del activo. | Sí (NN) | CHECK `ck_unidad_equipo_estado_operativo` (V3) | `'DISPONIBLE'`, `'RESERVADA'`, `'EN_USO'`, `'EN_MANTENIMIENTO'`, `'DE_BAJA'` | RN-01, RN-07 |
 | `metrica_uso_acumulada`| Horómetro, kilometraje o contador acumulado. | Sí (NN) | Ninguno | Valor decimal >= 0. | RF-02, RF-15 |
 | `notas_estado` | Observaciones estéticas o mecánicas previas. | No (NULL) | Ninguno | Texto libre. | RF-02 |
 
@@ -128,8 +128,8 @@
 | `mantenimiento_id` | Identificador técnico de la orden de taller. | Sí (NN) | **PK** | UUID / BIGINT estable. | Diseño técnico |
 | `unidad_equipo_id` | Unidad física bloqueada en mantenimiento. | Sí (NN) | **FK** -> `unidad_equipo` | Clave foránea válida. | RN-07, RF-14 |
 | `dano_id` | Daño originario si es correctivo. | No (NULL) | **FK** -> `dano` | Clave foránea opcional. | RN-07, RF-14 |
-| `tipo` | Clasificación del ingreso a taller. | Sí (NN) | Ninguno | `'PREVENTIVO'`, `'CORRECTIVO'` | RF-14 |
+| `tipo` | Clasificación del ingreso a taller. | Sí (NN) | CHECK `ck_mantenimiento_tipo` (V3) | `'PREVENTIVO'`, `'CORRECTIVO'` | RF-14 |
 | `fecha_ingreso` | Inicio del bloqueo de disponibilidad. | Sí (NN) | Ninguno | Fecha/hora válida. | RN-07, RF-14 |
-| `fecha_egreso_estimada`| Proyección de egreso del taller. | Sí (NN) | Ninguno | Fecha/hora >= `fecha_ingreso`. | RF-14 |
+| `fecha_egreso_estimada`| Proyección de egreso del taller. | Sí (NN) | CHECK `ck_mantenimiento_fechas` (V3) | Fecha/hora >= `fecha_ingreso`. | RF-14 |
 | `fecha_egreso_real` | Momento exacto de liberación efectiva. | No (NULL) | Ninguno | Fecha/hora (NULL si sigue en taller).| RN-07, RF-14 |
-| `estado` | Estado de la orden de mantenimiento. | Sí (NN) | Ninguno | `'EN_TALLER'`, `'FINALIZADO'`, `'CANCELADO'` | RF-14 |
+| `estado` | Estado de la orden de mantenimiento. | Sí (NN) | CHECK `ck_mantenimiento_estado` | `'EN_PROCESO'`, `'COMPLETADO'`, `'CANCELADO'` (alineado con el enum Java `EstadoMantenimiento`, V3) | RF-14 |

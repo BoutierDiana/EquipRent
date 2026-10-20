@@ -48,7 +48,7 @@ VALUES
 INSERT INTO equiprent.unidad_equipo (equipo_id, numero_serie, estado_operativo, metrica_uso_acumulada, notas_estado, activo)
 VALUES
     (1, 'SN-MAK-000124', 'DISPONIBLE', 12.50, 'Equipo con mantenimiento preventivo reciente', TRUE),
-    (2, 'SN-LAY-000201', 'ALQUILADO', 45.00, 'Entregado en obra norte', TRUE),
+    (2, 'SN-LAY-000201', 'EN_USO', 45.00, 'Entregado en obra norte', TRUE),
     (3, 'SN-HON-000301', 'EN_MANTENIMIENTO', 180.00, 'Requiere cambio de filtro y bujías', TRUE),
     (3, 'SN-HON-000302', 'DISPONIBLE', 10.00, 'Unidad seminueva en bodega central', TRUE);
 
