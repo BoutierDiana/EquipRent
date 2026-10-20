@@ -28,6 +28,19 @@ public class Mantenimiento {
         this.createdAt = createdAt;
     }
 
+    /**
+     * Regla de dominio (diccionario de datos + CHECK ck_mantenimiento_fechas):
+     * ni el egreso estimado ni el real pueden ser anteriores al ingreso.
+     */
+    public boolean tieneFechasCoherentes() {
+        if (fechaIngreso == null || fechaEgresoEstimada == null) {
+            return false;
+        }
+        boolean estimadaValida = !fechaEgresoEstimada.isBefore(fechaIngreso);
+        boolean realValida = fechaEgresoReal == null || !fechaEgresoReal.isBefore(fechaIngreso);
+        return estimadaValida && realValida;
+    }
+
     public Long getId() { return id; }
     public Long getUnidadEquipoId() { return unidadEquipoId; }
     public Long getDanoId() { return danoId; }

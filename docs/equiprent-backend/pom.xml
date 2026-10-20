@@ -42,6 +42,21 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- Migraciones versionadas (ADR-002). Spring Boot 3.2 gestiona la versión 9.22.x,
+             que trae el soporte de PostgreSQL dentro de flyway-core. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+
+        <!-- Swagger UI en /swagger-ui.html: contrato observable que usan las Guías Web 05-07.
+             La línea 2.5.x de springdoc es la compatible con Spring Boot 3.2. -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

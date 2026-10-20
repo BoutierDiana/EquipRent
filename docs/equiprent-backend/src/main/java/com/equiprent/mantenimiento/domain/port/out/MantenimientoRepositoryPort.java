@@ -8,4 +8,7 @@ public interface MantenimientoRepositoryPort {
     Mantenimiento guardar(Mantenimiento mantenimiento);
     Optional<Mantenimiento> buscarPorId(Long id);
     List<Mantenimiento> listarPorUnidadEquipoId(Long unidadEquipoId);
+    List<Mantenimiento> listarTodos();
+    boolean existePorId(Long id);
+    void eliminarPorId(Long id);
 }

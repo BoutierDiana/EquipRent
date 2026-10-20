@@ -28,7 +28,8 @@ public class MantenimientoPersistenceAdapter implements MantenimientoRepositoryP
         // Se obtiene una referencia diferida sin consultar la base completa (lazy reference)
         UnidadEquipoJpaEntity padreRef = unidadEquipoRepository.getReferenceById(domain.getUnidadEquipoId());
         MantenimientoJpaEntity jpaEntity = MantenimientoPersistenceMapper.toJpaEntity(domain, padreRef);
-        MantenimientoJpaEntity saved = repository.save(jpaEntity);
+        // Con id -> UPDATE (incluido el cambio de unidad_equipo_id); sin id -> INSERT.
+        MantenimientoJpaEntity saved = repository.saveAndFlush(jpaEntity);
         return MantenimientoPersistenceMapper.toDomain(saved);
     }
 
@@ -42,5 +43,23 @@ public class MantenimientoPersistenceAdapter implements MantenimientoRepositoryP
         return repository.findByUnidadEquipo_Id(unidadEquipoId).stream()
                 .map(MantenimientoPersistenceMapper::toDomain)
                 .toList();
+    }
+
+    @Override
+    public List<Mantenimiento> listarTodos() {
+        return repository.findAllByOrderByFechaIngresoDesc().stream()
+                .map(MantenimientoPersistenceMapper::toDomain)
+                .toList();
+    }
+
+    @Override
+    public boolean existePorId(Long id) {
+        return repository.existsById(id);
+    }
+
+    @Override
+    public void eliminarPorId(Long id) {
+        repository.deleteById(id);
+        repository.flush();
     }
 }

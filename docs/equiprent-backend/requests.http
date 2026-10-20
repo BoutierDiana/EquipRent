@@ -1,1 +1,159 @@
-GET http://localhost:8080/api/mantenimientos/error-simulado
+### =====================================================================
+### EquipRent API - pruebas manuales (IntelliJ HTTP Client)
+### Requiere el backend en http://localhost:8080 y las migraciones V1..V4.
+### Swagger UI: http://localhost:8080/swagger-ui.html
+### =====================================================================
+
+@base = http://localhost:8080/api
+
+### Salud del servicio
+GET {{base}}/health
+
+### ---------------------------------------------------------------------
+### UnidadEquipo (padre)
+### ---------------------------------------------------------------------
+
+### Listar todas -> 200
+GET {{base}}/unidades-equipo
+
+### Filtrar por estado -> 200
+GET {{base}}/unidades-equipo?estado=DISPONIBLE
+
+### Buscar por id -> 200
+GET {{base}}/unidades-equipo/1
+
+### Buscar inexistente -> 404 con ApiError
+GET {{base}}/unidades-equipo/9999
+
+### Id no numérico -> 400
+GET {{base}}/unidades-equipo/abc
+
+### Crear -> 201
+POST {{base}}/unidades-equipo
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "numeroSerie": "SN-MAK-000999",
+  "estadoOperativo": "DISPONIBLE",
+  "metricaUsoAcumulada": 0,
+  "notasEstado": "Ingreso de prueba desde requests.http"
+}
+
+### Crear con validaciones fallidas -> 400 con fieldErrors
+POST {{base}}/unidades-equipo
+Content-Type: application/json
+
+{
+  "equipoId": null,
+  "numeroSerie": "SN1",
+  "estadoOperativo": "ALQUILADO",
+  "metricaUsoAcumulada": -5
+}
+
+### Crear con número de serie repetido -> 409
+POST {{base}}/unidades-equipo
+Content-Type: application/json
+
+{
+  "equipoId": 1,
+  "numeroSerie": "SN-MAK-000124",
+  "estadoOperativo": "DISPONIBLE",
+  "metricaUsoAcumulada": 0
+}
+
+### Actualizar -> 200 (cambia estado y métrica, conserva createdAt)
+PUT {{base}}/unidades-equipo/4
+Content-Type: application/json
+
+{
+  "equipoId": 3,
+  "numeroSerie": "SN-HON-000302",
+  "estadoOperativo": "RESERVADA",
+  "metricaUsoAcumulada": 12.5,
+  "notasEstado": "Reservada para obra sur",
+  "activo": true
+}
+
+### Eliminar unidad con mantenimientos (SN-HON-000301) -> 409
+DELETE {{base}}/unidades-equipo/3
+
+### ---------------------------------------------------------------------
+### Mantenimiento (hija, relación 1:N)
+### ---------------------------------------------------------------------
+
+### Listar todas las órdenes -> 200
+GET {{base}}/mantenimientos
+
+### Órdenes de una unidad -> 200
+GET {{base}}/mantenimientos/unidad-equipo/3
+
+### Buscar inexistente -> 404 con ApiError
+GET {{base}}/mantenimientos/9999
+
+### Registrar orden -> 201
+POST {{base}}/mantenimientos
+Content-Type: application/json
+
+{
+  "unidadEquipoId": 4,
+  "danoId": null,
+  "tipo": "PREVENTIVO",
+  "fechaIngreso": "2026-10-21T08:00:00-04:00",
+  "fechaEgresoEstimada": "2026-10-22T18:00:00-04:00",
+  "fechaEgresoReal": null,
+  "estado": "EN_PROCESO"
+}
+
+### Registrar con unidad inexistente -> 404
+POST {{base}}/mantenimientos
+Content-Type: application/json
+
+{
+  "unidadEquipoId": 9999,
+  "tipo": "PREVENTIVO",
+  "fechaIngreso": "2026-10-21T08:00:00-04:00",
+  "fechaEgresoEstimada": "2026-10-22T18:00:00-04:00",
+  "estado": "EN_PROCESO"
+}
+
+### Registrar con egreso anterior al ingreso -> 400
+POST {{base}}/mantenimientos
+Content-Type: application/json
+
+{
+  "unidadEquipoId": 4,
+  "tipo": "CORRECTIVO",
+  "fechaIngreso": "2026-10-21T08:00:00-04:00",
+  "fechaEgresoEstimada": "2026-10-20T08:00:00-04:00",
+  "estado": "EN_PROCESO"
+}
+
+### Fecha mal formada -> 400
+POST {{base}}/mantenimientos
+Content-Type: application/json
+
+{
+  "unidadEquipoId": 4,
+  "tipo": "CORRECTIVO",
+  "fechaIngreso": "21/10/2026",
+  "fechaEgresoEstimada": "2026-10-22T08:00:00-04:00",
+  "estado": "EN_PROCESO"
+}
+
+### Actualizar y reasignar a otra unidad -> 200 (cambia mantenimiento.unidad_equipo_id)
+PUT {{base}}/mantenimientos/1
+Content-Type: application/json
+
+{
+  "unidadEquipoId": 4,
+  "danoId": null,
+  "tipo": "CORRECTIVO",
+  "fechaIngreso": "2026-10-14T08:30:00-04:00",
+  "fechaEgresoEstimada": "2026-10-25T18:00:00-04:00",
+  "fechaEgresoReal": null,
+  "estado": "EN_PROCESO"
+}
+
+### Eliminar orden -> 204
+DELETE {{base}}/mantenimientos/4

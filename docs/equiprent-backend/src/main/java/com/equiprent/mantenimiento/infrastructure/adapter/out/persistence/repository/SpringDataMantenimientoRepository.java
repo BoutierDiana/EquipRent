@@ -7,4 +7,7 @@ import java.util.List;
 
 public interface SpringDataMantenimientoRepository extends JpaRepository<MantenimientoJpaEntity, Long> {
     List<MantenimientoJpaEntity> findByUnidadEquipo_Id(Long unidadEquipoId);
+
+    // Listado completo ordenado por ingreso (más reciente primero).
+    List<MantenimientoJpaEntity> findAllByOrderByFechaIngresoDesc();
 }

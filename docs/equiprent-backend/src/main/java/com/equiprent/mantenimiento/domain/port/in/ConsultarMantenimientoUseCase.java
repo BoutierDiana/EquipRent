@@ -7,4 +7,5 @@ import java.util.Optional;
 public interface ConsultarMantenimientoUseCase {
     Optional<Mantenimiento> buscarPorId(Long id);
     List<Mantenimiento> listarPorUnidadEquipoId(Long unidadEquipoId);
+    List<Mantenimiento> listarTodos();
 }

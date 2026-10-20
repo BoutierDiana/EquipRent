@@ -1,9 +1,11 @@
 package com.equiprent.unidadequipo.infrastructure.adapter.out.persistence.repository;
 
+import com.equiprent.unidadequipo.domain.exception.UnidadEquipoConDependenciasException;
 import com.equiprent.unidadequipo.domain.model.UnidadEquipo;
 import com.equiprent.unidadequipo.domain.port.out.UnidadEquipoRepositoryPort;
 import com.equiprent.unidadequipo.infrastructure.adapter.out.persistence.entity.UnidadEquipoJpaEntity;
 import com.equiprent.unidadequipo.infrastructure.adapter.out.persistence.mapper.UnidadEquipoPersistenceMapper;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,7 +23,9 @@ public class UnidadEquipoPersistenceAdapter implements UnidadEquipoRepositoryPor
     @Override
     public UnidadEquipo guardar(UnidadEquipo domain) {
         UnidadEquipoJpaEntity jpaEntity = UnidadEquipoPersistenceMapper.toJpaEntity(domain);
-        UnidadEquipoJpaEntity saved = repository.save(jpaEntity);
+        // saveAndFlush: si PostgreSQL rechaza el INSERT/UPDATE (FK, CHECK, UNIQUE),
+        // el error aparece aquí y no recién al confirmar la transacción.
+        UnidadEquipoJpaEntity saved = repository.saveAndFlush(jpaEntity);
         return UnidadEquipoPersistenceMapper.toDomain(saved);
     }
 
@@ -41,5 +45,27 @@ public class UnidadEquipoPersistenceAdapter implements UnidadEquipoRepositoryPor
     @Override
     public boolean existePorNumeroSerie(String numeroSerie) {
         return repository.existsByNumeroSerie(numeroSerie);
+    }
+
+    @Override
+    public boolean existePorNumeroSerieEnOtraUnidad(String numeroSerie, Long idExcluido) {
+        return repository.existsByNumeroSerieAndIdNot(numeroSerie, idExcluido);
+    }
+
+    @Override
+    public boolean existePorId(Long id) {
+        return repository.existsById(id);
+    }
+
+    @Override
+    public void eliminarPorId(Long id) {
+        try {
+            repository.deleteById(id);
+            // flush fuerza el DELETE ahora: si hay hijos, la FK ON DELETE RESTRICT falla aquí
+            // y el adaptador traduce el error técnico a una excepción del dominio (409).
+            repository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new UnidadEquipoConDependenciasException(id);
+        }
     }
 }

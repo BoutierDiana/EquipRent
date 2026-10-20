@@ -13,4 +13,7 @@ public interface SpringDataUnidadEquipoRepository extends JpaRepository<UnidadEq
     Optional<UnidadEquipoJpaEntity> findByNumeroSerie(String numeroSerie);
 
     boolean existsByNumeroSerie(String numeroSerie);
+
+    // Para editar: ¿otra unidad (id distinto) ya usa este número de serie?
+    boolean existsByNumeroSerieAndIdNot(String numeroSerie, Long id);
 }
