@@ -1,0 +1,18 @@
+:root {
+    --color-primary: #7c3aed;          /* Violeta principal */
+    --color-primary-hover: #6d28d9;    /* Violeta oscuro hover */
+    --color-primary-light: #ede9fe;    /* Lavanda claro */
+    --color-primary-border: #c4b5fd;   /* Borde morado suave */
+
+    --color-bg-dark: #0f0a1c;          /* Fondo base morado muy oscuro */
+    --color-surface-dark: #19122b;     /* Superficie / Paneles */
+    --color-card-dark: #221a3a;        /* Fondo tarjetas */
+    --color-border-dark: #362956;      /* Bordes morados sutiles */
+
+    --color-text-main: #f8fafc;
+    --color-text-muted: #a78bfa;       /* Texto secundario violeta claro */
+    --color-text-subtle: #7c6f9e;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+}

@@ -1,4 +1,4 @@
-export function StatusBadgeTest({ active, text }: { active: boolean; text?: string }) {
+export function StatusBadge({ active, text }: { active: boolean; text?: string }) {
     const displayText = text ?? (active ? 'Activo' : 'Inactivo');
     return (
         <span
