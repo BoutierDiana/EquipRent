@@ -1,0 +1,11 @@
+# Configuración de IDE (personal de cada PC)
+.idea/
+*.iml
+
+# Resultados de compilación
+target/
+dist/
+node_modules/
+
+# Variables de entorno locales
+.env.local
