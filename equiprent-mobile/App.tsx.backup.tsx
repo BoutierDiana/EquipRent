@@ -1,0 +1,155 @@
+import React, { useState } from 'react';
+import { StatusBar } from 'expo-status-bar';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { EmptyState } from './src/components/EmptyState';
+import { MantenimientoCard } from './src/components/MantenimientoCard';
+import { MetricCard } from './src/components/MetricCard';
+import { TabSelector } from './src/components/TabSelector';
+import { UnidadEquipoCard } from './src/components/UnidadEquipoCard';
+import { MANTENIMIENTOS, UNIDADES } from './src/data/demoData';
+import type { Seccion } from './src/models/equiprent';
+import { PALETTE } from './src/theme/palette';
+
+export default function App() {
+  // ESTADO MÍNIMO: solo decisiones de interfaz.
+  const [seccion, setSeccion] = useState<Seccion>('unidades');
+  const [unidadId, setUnidadId] = useState<number | null>(null);
+
+  // VALORES DERIVADOS: se recalculan en cada render, sin useState extra.
+  const unidadElegida = UNIDADES.find((u) => u.id === unidadId) ?? null;
+  const mantenimientosElegidos = unidadElegida
+    ? MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidadElegida.id)
+    : [];
+
+  return (
+    <SafeAreaProvider>
+      <SafeAreaView style={styles.pantalla} edges={['top', 'bottom']}>
+        <StatusBar style="light" />
+        <ScrollView contentContainerStyle={styles.contenido}>
+          {/* Encabezado */}
+          <View style={styles.nodo}>
+            <View style={styles.nodoPunto} />
+            <Text style={styles.nodoTexto}>NODO LOCAL · DATOS DEMO</Text>
+          </View>
+          <Text style={styles.sobreTitulo}>PROGRAMACIÓN APLICADA · 2026-II</Text>
+          <Text style={styles.titulo}>EquipRent</Text>
+          <Text style={styles.subtitulo}>
+            Guía 02: componentes, props, estado y estilos.
+          </Text>
+
+          {/* Métricas: el mismo componente con props distintas */}
+          <View style={styles.indicadores}>
+            <MetricCard etiqueta="Unidades demo" valor={UNIDADES.length} />
+            <MetricCard etiqueta="Mantenimientos demo" valor={MANTENIMIENTOS.length} />
+          </View>
+
+          <Text style={styles.seccionTitulo}>Explorar información</Text>
+          <TabSelector actual={seccion} alCambiar={setSeccion} />
+
+          {seccion === 'unidades' ? (
+            <View style={styles.grupo}>
+              <Text style={styles.ayuda}>
+                Toca una unidad para ver su relación con los mantenimientos.
+              </Text>
+
+              {UNIDADES.map((unidad) => (
+                <UnidadEquipoCard
+                  key={unidad.id}
+                  unidad={unidad}
+                  cantidadMantenimientos={
+                    MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidad.id).length
+                  }
+                  seleccionada={unidadId === unidad.id}
+                  alSeleccionar={() => setUnidadId(unidad.id)}
+                />
+              ))}
+
+              {unidadElegida && (
+                <View style={styles.detallePanel}>
+                  <Text style={styles.detalleTitulo}>
+                    Mantenimientos de {unidadElegida.codigoInventario}
+                  </Text>
+                  {mantenimientosElegidos.length === 0 ? (
+                    <EmptyState mensaje="Esta unidad no tiene mantenimientos en los datos de ejemplo." />
+                  ) : (
+                    mantenimientosElegidos.map((mantenimiento) => (
+                      <MantenimientoCard
+                        key={mantenimiento.id}
+                        mantenimiento={mantenimiento}
+                        codigoUnidad={unidadElegida.codigoInventario}
+                      />
+                    ))
+                  )}
+                </View>
+              )}
+            </View>
+          ) : (
+            <View style={styles.grupo}>
+              <Text style={styles.ayuda}>
+                Esta lista muestra los cinco mantenimientos de demostración.
+              </Text>
+              {MANTENIMIENTOS.map((mantenimiento) => {
+                const unidad = UNIDADES.find((u) => u.id === mantenimiento.unidadEquipoId);
+                return (
+                  <MantenimientoCard
+                    key={mantenimiento.id}
+                    mantenimiento={mantenimiento}
+                    codigoUnidad={unidad?.codigoInventario ?? 'Unidad no encontrada'}
+                  />
+                );
+              })}
+            </View>
+          )}
+
+          <Text style={styles.aviso}>
+            IMPORTANTE: son datos locales de demostración; no hay API REST ni PostgreSQL.
+          </Text>
+          <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
+        </ScrollView>
+      </SafeAreaView>
+    </SafeAreaProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  pantalla: { flex: 1, backgroundColor: PALETTE.fondo },
+  contenido: { paddingHorizontal: 18, paddingTop: 20, paddingBottom: 48 },
+  nodo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: PALETTE.borde,
+    borderRadius: 99,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 14,
+  },
+  nodoPunto: { width: 8, height: 8, borderRadius: 4, backgroundColor: PALETTE.lima },
+  nodoTexto: { color: PALETTE.secundario, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  sobreTitulo: { color: PALETTE.acento, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  titulo: { color: PALETTE.principal, fontSize: 32, fontWeight: '800', marginTop: 6 },
+  subtitulo: { color: PALETTE.secundario, marginTop: 8, fontSize: 14, lineHeight: 20 },
+  indicadores: { flexDirection: 'row', gap: 12, marginTop: 22 },
+  seccionTitulo: {
+    marginTop: 26,
+    fontSize: 18,
+    fontWeight: '800',
+    color: PALETTE.principal,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  grupo: { marginTop: 16 },
+  ayuda: { color: PALETTE.secundario, marginBottom: 12, fontSize: 13, lineHeight: 20 },
+  detallePanel: {
+    paddingTop: 16,
+    marginTop: 6,
+    borderTopWidth: 1,
+    borderColor: PALETTE.borde,
+  },
+  detalleTitulo: { color: PALETTE.principal, fontSize: 17, fontWeight: '800', marginBottom: 12 },
+  aviso: { marginTop: 20, color: PALETTE.secundario, fontSize: 12, textAlign: 'center' },
+  pie: { marginTop: 10, textAlign: 'center', color: PALETTE.lima, fontWeight: '700', fontSize: 12 },
+});
