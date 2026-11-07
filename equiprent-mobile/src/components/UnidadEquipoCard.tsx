@@ -11,39 +11,39 @@ type Props = {
 };
 
 export function UnidadEquipoCard({
-  unidad,
-  cantidadMantenimientos,
-  seleccionada,
-  alSeleccionar,
-}: Props) {
+                                   unidad,
+                                   cantidadMantenimientos,
+                                   seleccionada,
+                                   alSeleccionar,
+                                 }: Props) {
   return (
-    <Pressable
-      onPress={alSeleccionar}
-      accessibilityRole="button"
-      accessibilityLabel={`Ver mantenimientos de ${unidad.codigoInventario}`}
-      accessibilityState={{ selected: seleccionada }}
-      style={[styles.tarjeta, seleccionada && styles.tarjetaSeleccionada]}
-    >
-      <View style={styles.fila}>
-        <Text style={styles.codigo}>{unidad.codigoInventario}</Text>
-        <Text style={[styles.estado, !unidad.activo && styles.inactiva]}>
-          {unidad.activo ? 'ACTIVA' : 'INACTIVA'}
+      <Pressable
+          onPress={alSeleccionar}
+          accessibilityRole="button"
+          accessibilityLabel={`Ver mantenimientos de ${unidad.codigoInventario}`}
+          accessibilityState={{ selected: seleccionada }}
+          style={[styles.tarjeta, seleccionada && styles.tarjetaSeleccionada]}
+      >
+        <View style={styles.fila}>
+          <Text style={styles.codigo}>{unidad.codigoInventario}</Text>
+          <Text style={[styles.estado, !unidad.activo && styles.inactiva]}>
+            {unidad.activo ? 'ACTIVA' : 'INACTIVA'}
+          </Text>
+        </View>
+
+        <Text style={styles.nombre}>
+          {unidad.marca} {unidad.modelo}
         </Text>
-      </View>
+        <Text style={styles.detalle}>Serie: {unidad.numeroSerie}</Text>
+        <Text style={styles.detalle}>Estado operativo: {unidad.estadoOperativo}</Text>
+        <Text style={styles.detalle}>
+          {cantidadMantenimientos} mantenimiento(s) en la demostración
+        </Text>
 
-      <Text style={styles.nombre}>
-        {unidad.marca} {unidad.modelo}
-      </Text>
-      <Text style={styles.detalle}>Serie: {unidad.numeroSerie}</Text>
-      <Text style={styles.detalle}>Estado operativo: {unidad.estadoOperativo}</Text>
-      <Text style={styles.detalle}>
-        {cantidadMantenimientos} mantenimiento(s) en la demostración
-      </Text>
-
-      <Text style={[styles.accion, seleccionada && styles.accionActiva]}>
-        {seleccionada ? 'Unidad seleccionada' : 'Tocar para ver mantenimientos'}
-      </Text>
-    </Pressable>
+        <Text style={[styles.accion, seleccionada && styles.accionActiva]}>
+          {seleccionada ? 'Unidad seleccionada' : 'Tocar para ver mantenimientos'}
+        </Text>
+      </Pressable>
   );
 }
 

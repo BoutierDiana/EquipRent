@@ -10,20 +10,20 @@ type Props = {
 
 export function MantenimientoCard({ mantenimiento, codigoUnidad }: Props) {
   return (
-    <View style={styles.tarjeta}>
-      <View style={styles.fila}>
-        <Text style={styles.tipo}>{mantenimiento.tipoMantenimiento}</Text>
-        <Text style={styles.fecha}>{mantenimiento.fecha}</Text>
+      <View style={styles.tarjeta}>
+        <View style={styles.fila}>
+          <Text style={styles.tipo}>{mantenimiento.tipoMantenimiento}</Text>
+          <Text style={styles.fecha}>{mantenimiento.fecha}</Text>
+        </View>
+
+        <Text style={styles.descripcion}>{mantenimiento.descripcion}</Text>
+        <Text style={styles.costo}>Costo: ${mantenimiento.costo.toFixed(2)}</Text>
+        <Text style={styles.unidad}>Unidad: {codigoUnidad}</Text>
+
+        {!mantenimiento.activo && (
+            <Text style={styles.inactivo}>REGISTRO INACTIVO</Text>
+        )}
       </View>
-
-      <Text style={styles.descripcion}>{mantenimiento.descripcion}</Text>
-      <Text style={styles.costo}>Costo: ${mantenimiento.costo.toFixed(2)}</Text>
-      <Text style={styles.unidad}>Unidad: {codigoUnidad}</Text>
-
-      {!mantenimiento.activo && (
-        <Text style={styles.inactivo}>REGISTRO INACTIVO</Text>
-      )}
-    </View>
   );
 }
 

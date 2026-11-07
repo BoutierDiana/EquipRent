@@ -9,10 +9,10 @@ type Props = {
 
 export function MetricCard({ etiqueta, valor }: Props) {
   return (
-    <View style={styles.tarjeta}>
-      <Text style={styles.valor}>{valor}</Text>
-      <Text style={styles.etiqueta}>{etiqueta}</Text>
-    </View>
+      <View style={styles.tarjeta}>
+        <Text style={styles.valor}>{valor}</Text>
+        <Text style={styles.etiqueta}>{etiqueta}</Text>
+      </View>
   );
 }
 

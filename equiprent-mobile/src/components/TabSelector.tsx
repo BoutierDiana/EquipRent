@@ -15,25 +15,25 @@ const OPCIONES: { clave: Seccion; etiqueta: string }[] = [
 
 export function TabSelector({ actual, alCambiar }: Props) {
   return (
-    <View style={styles.fila}>
-      {OPCIONES.map((opcion) => {
-        const elegida = actual === opcion.clave;
-        return (
-          <Pressable
-            key={opcion.clave}
-            onPress={() => alCambiar(opcion.clave)}
-            accessibilityRole="button"
-            accessibilityLabel={`Mostrar ${opcion.etiqueta}`}
-            accessibilityState={{ selected: elegida }}
-            style={[styles.boton, elegida && styles.botonElegido]}
-          >
-            <Text style={[styles.texto, elegida && styles.textoElegido]}>
-              {opcion.etiqueta}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
+      <View style={styles.fila}>
+        {OPCIONES.map((opcion) => {
+          const elegida = actual === opcion.clave;
+          return (
+              <Pressable
+                  key={opcion.clave}
+                  onPress={() => alCambiar(opcion.clave)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Mostrar ${opcion.etiqueta}`}
+                  accessibilityState={{ selected: elegida }}
+                  style={[styles.boton, elegida && styles.botonElegido]}
+              >
+                <Text style={[styles.texto, elegida && styles.textoElegido]}>
+                  {opcion.etiqueta}
+                </Text>
+              </Pressable>
+          );
+        })}
+      </View>
   );
 }
 

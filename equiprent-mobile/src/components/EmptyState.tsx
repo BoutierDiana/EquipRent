@@ -6,16 +6,16 @@ type Props = { mensaje: string };
 
 export function EmptyState({ mensaje }: Props) {
   return (
-    <View style={styles.caja} accessibilityRole="text">
-      <View style={styles.encabezado}>
-        {/* Indicador geométrico: cuadro con núcleo (sin emojis) */}
-        <View style={styles.icono}>
-          <View style={styles.nucleo} />
+      <View style={styles.caja} accessibilityRole="text">
+        <View style={styles.encabezado}>
+          {/* Indicador geométrico: cuadro con núcleo (sin emojis) */}
+          <View style={styles.icono}>
+            <View style={styles.nucleo} />
+          </View>
+          <Text style={styles.titulo}>Sin resultados</Text>
         </View>
-        <Text style={styles.titulo}>Sin resultados</Text>
+        <Text style={styles.texto}>{mensaje}</Text>
       </View>
-      <Text style={styles.texto}>{mensaje}</Text>
-    </View>
   );
 }
 

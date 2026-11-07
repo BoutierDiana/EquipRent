@@ -19,96 +19,96 @@ export default function App() {
   // VALORES DERIVADOS: se recalculan en cada render, sin useState extra.
   const unidadElegida = UNIDADES.find((u) => u.id === unidadId) ?? null;
   const mantenimientosElegidos = unidadElegida
-    ? MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidadElegida.id)
-    : [];
+      ? MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidadElegida.id)
+      : [];
 
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.pantalla} edges={['top', 'bottom']}>
-        <StatusBar style="light" />
-        <ScrollView contentContainerStyle={styles.contenido}>
-          {/* Encabezado */}
-          <View style={styles.nodo}>
-            <View style={styles.nodoPunto} />
-            <Text style={styles.nodoTexto}>NODO LOCAL · DATOS DEMO</Text>
-          </View>
-          <Text style={styles.sobreTitulo}>PROGRAMACIÓN APLICADA · 2026-II</Text>
-          <Text style={styles.titulo}>EquipRent</Text>
-          <Text style={styles.subtitulo}>
-            Guía 02: componentes, props, estado y estilos.
-          </Text>
+      <SafeAreaProvider>
+        <SafeAreaView style={styles.pantalla} edges={['top', 'bottom']}>
+          <StatusBar style="light" />
+          <ScrollView contentContainerStyle={styles.contenido}>
+            {/* Encabezado */}
+            <View style={styles.nodo}>
+              <View style={styles.nodoPunto} />
+              <Text style={styles.nodoTexto}>NODO LOCAL · DATOS DEMO</Text>
+            </View>
+            <Text style={styles.sobreTitulo}>PROGRAMACIÓN APLICADA · 2026-II</Text>
+            <Text style={styles.titulo}>EquipRent</Text>
+            <Text style={styles.subtitulo}>
+              Guía 02: componentes, props, estado y estilos.
+            </Text>
 
-          {/* Métricas: el mismo componente con props distintas */}
-          <View style={styles.indicadores}>
-            <MetricCard etiqueta="Unidades demo" valor={UNIDADES.length} />
-            <MetricCard etiqueta="Mantenimientos demo" valor={MANTENIMIENTOS.length} />
-          </View>
+            {/* Métricas: el mismo componente con props distintas */}
+            <View style={styles.indicadores}>
+              <MetricCard etiqueta="Unidades demo" valor={UNIDADES.length} />
+              <MetricCard etiqueta="Mantenimientos demo" valor={MANTENIMIENTOS.length} />
+            </View>
 
-          <Text style={styles.seccionTitulo}>Explorar información</Text>
-          <TabSelector actual={seccion} alCambiar={setSeccion} />
+            <Text style={styles.seccionTitulo}>Explorar información</Text>
+            <TabSelector actual={seccion} alCambiar={setSeccion} />
 
-          {seccion === 'unidades' ? (
-            <View style={styles.grupo}>
-              <Text style={styles.ayuda}>
-                Toca una unidad para ver su relación con los mantenimientos.
-              </Text>
-
-              {UNIDADES.map((unidad) => (
-                <UnidadEquipoCard
-                  key={unidad.id}
-                  unidad={unidad}
-                  cantidadMantenimientos={
-                    MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidad.id).length
-                  }
-                  seleccionada={unidadId === unidad.id}
-                  alSeleccionar={() => setUnidadId(unidad.id)}
-                />
-              ))}
-
-              {unidadElegida && (
-                <View style={styles.detallePanel}>
-                  <Text style={styles.detalleTitulo}>
-                    Mantenimientos de {unidadElegida.codigoInventario}
+            {seccion === 'unidades' ? (
+                <View style={styles.grupo}>
+                  <Text style={styles.ayuda}>
+                    Toca una unidad para ver su relación con los mantenimientos.
                   </Text>
-                  {mantenimientosElegidos.length === 0 ? (
-                    <EmptyState mensaje="Esta unidad no tiene mantenimientos en los datos de ejemplo." />
-                  ) : (
-                    mantenimientosElegidos.map((mantenimiento) => (
-                      <MantenimientoCard
-                        key={mantenimiento.id}
-                        mantenimiento={mantenimiento}
-                        codigoUnidad={unidadElegida.codigoInventario}
+
+                  {UNIDADES.map((unidad) => (
+                      <UnidadEquipoCard
+                          key={unidad.id}
+                          unidad={unidad}
+                          cantidadMantenimientos={
+                            MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidad.id).length
+                          }
+                          seleccionada={unidadId === unidad.id}
+                          alSeleccionar={() => setUnidadId(unidad.id)}
                       />
-                    ))
+                  ))}
+
+                  {unidadElegida && (
+                      <View style={styles.detallePanel}>
+                        <Text style={styles.detalleTitulo}>
+                          Mantenimientos de {unidadElegida.codigoInventario}
+                        </Text>
+                        {mantenimientosElegidos.length === 0 ? (
+                            <EmptyState mensaje="Esta unidad no tiene mantenimientos en los datos de ejemplo." />
+                        ) : (
+                            mantenimientosElegidos.map((mantenimiento) => (
+                                <MantenimientoCard
+                                    key={mantenimiento.id}
+                                    mantenimiento={mantenimiento}
+                                    codigoUnidad={unidadElegida.codigoInventario}
+                                />
+                            ))
+                        )}
+                      </View>
                   )}
                 </View>
-              )}
-            </View>
-          ) : (
-            <View style={styles.grupo}>
-              <Text style={styles.ayuda}>
-                Esta lista muestra los cinco mantenimientos de demostración.
-              </Text>
-              {MANTENIMIENTOS.map((mantenimiento) => {
-                const unidad = UNIDADES.find((u) => u.id === mantenimiento.unidadEquipoId);
-                return (
-                  <MantenimientoCard
-                    key={mantenimiento.id}
-                    mantenimiento={mantenimiento}
-                    codigoUnidad={unidad?.codigoInventario ?? 'Unidad no encontrada'}
-                  />
-                );
-              })}
-            </View>
-          )}
+            ) : (
+                <View style={styles.grupo}>
+                  <Text style={styles.ayuda}>
+                    Esta lista muestra los cinco mantenimientos de demostración.
+                  </Text>
+                  {MANTENIMIENTOS.map((mantenimiento) => {
+                    const unidad = UNIDADES.find((u) => u.id === mantenimiento.unidadEquipoId);
+                    return (
+                        <MantenimientoCard
+                            key={mantenimiento.id}
+                            mantenimiento={mantenimiento}
+                            codigoUnidad={unidad?.codigoInventario ?? 'Unidad no encontrada'}
+                        />
+                    );
+                  })}
+                </View>
+            )}
 
-          <Text style={styles.aviso}>
-            IMPORTANTE: son datos locales de demostración; no hay API REST ni PostgreSQL.
-          </Text>
-          <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
-        </ScrollView>
-      </SafeAreaView>
-    </SafeAreaProvider>
+            <Text style={styles.aviso}>
+              IMPORTANTE: son datos locales de demostración; no hay API REST ni PostgreSQL.
+            </Text>
+            <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
+          </ScrollView>
+        </SafeAreaView>
+      </SafeAreaProvider>
   );
 }
 
