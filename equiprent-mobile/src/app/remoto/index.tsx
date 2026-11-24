@@ -64,6 +64,16 @@ export default function AreaRemotaScreen() {
                 </Pressable>
             </Link>
 
+            <Link href="/remoto/offline" asChild>
+                <Pressable style={styles.boton} accessibilityRole="link">
+                    <View style={styles.botonFila}>
+                        <Text style={styles.botonTitulo}>SQLite y modo sin conexión</Text>
+                        <View style={styles.flecha} />
+                    </View>
+                    <Text style={styles.botonSub}>Caché local · cola de cambios · sincronización manual</Text>
+                </Pressable>
+            </Link>
+
             <Link href="/diagnostico" asChild>
                 <Pressable style={styles.botonSuave} accessibilityRole="link">
                     <Text style={styles.botonTitulo}>Diagnóstico de conexión</Text>
