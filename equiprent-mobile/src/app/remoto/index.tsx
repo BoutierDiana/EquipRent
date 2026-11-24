@@ -32,10 +32,15 @@ export default function AreaRemotaScreen() {
                 </Pressable>
             </Link>
 
-            <View style={[styles.boton, styles.pendiente]}>
-                <Text style={styles.botonTitulo}>Mantenimientos persistidos</Text>
-                <Text style={styles.botonSub}>Guía 10: relación 1:N contra /api/mantenimientos</Text>
-            </View>
+            <Link href="/remoto/mantenimientos" asChild>
+                <Pressable style={styles.boton} accessibilityRole="link">
+                    <View style={styles.botonFila}>
+                        <Text style={styles.botonTitulo}>CRUD REST de Mantenimientos</Text>
+                        <View style={styles.flecha} />
+                    </View>
+                    <Text style={styles.botonSub}>/api/mantenimientos · relación 1:N con unidades</Text>
+                </Pressable>
+            </Link>
 
             <Link href="/diagnostico" asChild>
                 <Pressable style={styles.botonSuave} accessibilityRole="link">
@@ -60,7 +65,6 @@ const styles = StyleSheet.create({
         borderColor: PALETTE.borde,
         marginBottom: 11,
     },
-    pendiente: { opacity: 0.55, borderStyle: 'dashed' },
     botonFila: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     botonTitulo: { color: PALETTE.principal, fontSize: 16, fontWeight: '800' },
     botonSub: { color: PALETTE.secundario, marginTop: 6, lineHeight: 20 },

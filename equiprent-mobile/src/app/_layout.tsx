@@ -32,6 +32,10 @@ export default function RootLayout() {
                 <Stack.Screen name="remoto/unidades/nuevo" options={{ title: 'Nueva Unidad (API)' }} />
                 <Stack.Screen name="remoto/unidades/editar/[id]" options={{ title: 'Editar Unidad (API)' }} />
                 <Stack.Screen name="remoto/unidades/[id]" options={{ title: 'Ficha Remota' }} />
+                <Stack.Screen name="remoto/mantenimientos/index" options={{ title: 'Órdenes (API)' }} />
+                <Stack.Screen name="remoto/mantenimientos/nuevo" options={{ title: 'Nueva Orden (API)' }} />
+                <Stack.Screen name="remoto/mantenimientos/editar/[id]" options={{ title: 'Editar Orden (API)' }} />
+                <Stack.Screen name="remoto/mantenimientos/[id]" options={{ title: 'Detalle Orden (API)' }} />
                 <Stack.Screen name="mantenimientos/index" options={{ title: 'Órdenes de Taller' }} />
                 <Stack.Screen name="mantenimientos/nuevo" options={{ title: 'Nueva Orden de Taller' }} />
                 <Stack.Screen name="mantenimientos/editar/[id]" options={{ title: 'Editar Orden' }} />

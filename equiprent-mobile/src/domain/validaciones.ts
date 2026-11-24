@@ -87,7 +87,7 @@ export function validarMantenimiento(
 }
 
 /** true si existe al menos un mensaje de error. */
-export function tieneErrores(errores: ErroresMantenimiento | ErroresUnidad | ErroresUnidadRemota): boolean {
+export function tieneErrores(errores: object): boolean {
     return Object.keys(errores).length > 0;
 }
 
@@ -236,6 +236,82 @@ export function validarUnidadRemota(
     const metrica = leerCosto(datos.metricaUsoAcumulada); // mismo parseo decimal (coma o punto)
     if (!Number.isFinite(metrica) || metrica < 0) {
         errores.metricaUsoAcumulada = MENSAJES_UNIDAD_REMOTA.metrica;
+    }
+    return errores;
+}
+
+
+// ---------------------------------------------------------------------------
+// Guía 10: formulario de Mantenimiento REMOTO (contrato de /api/mantenimientos).
+// ---------------------------------------------------------------------------
+
+/** Catálogo de estados de una orden (CHECK ck_mantenimiento_estado). */
+export const ESTADOS_MANTENIMIENTO = ['EN_PROCESO', 'COMPLETADO', 'CANCELADO'] as const;
+
+export type MantenimientoRemotoFormulario = {
+    unidadEquipoId: number | null;
+    tipo: string;
+    fechaIngreso: string; // AAAA-MM-DD
+    fechaEgresoEstimada: string; // AAAA-MM-DD
+    fechaEgresoReal: string; // AAAA-MM-DD o '' (todavía no salió del taller)
+    estado: string;
+};
+
+export type ErroresMantenimientoRemoto = Partial<Record<keyof MantenimientoRemotoFormulario, string>>;
+
+export const MANTENIMIENTO_REMOTO_VACIO: MantenimientoRemotoFormulario = {
+    unidadEquipoId: null,
+    tipo: 'PREVENTIVO',
+    fechaIngreso: '',
+    fechaEgresoEstimada: '',
+    fechaEgresoReal: '',
+    estado: 'EN_PROCESO',
+};
+
+export const MENSAJES_MANTENIMIENTO_REMOTO = {
+    unidad: MENSAJES.unidad,
+    tipo: MENSAJES.tipo,
+    fecha: MENSAJES.fecha,
+    egresoAnterior: 'No puede ser anterior a la fecha de ingreso.',
+    estado: 'Selecciona EN PROCESO, COMPLETADO o CANCELADO.',
+} as const;
+
+/**
+ * Repite las reglas del backend: @Valid de Crear/ActualizarMantenimientoRequest
+ * y la regla de dominio FechasMantenimientoInvalidasException (egreso >= ingreso).
+ * Las fechas 'AAAA-MM-DD' se comparan como texto: ese formato ordena igual que el calendario.
+ */
+export function validarMantenimientoRemoto(
+    datos: MantenimientoRemotoFormulario,
+    idsUnidades: readonly number[]
+): ErroresMantenimientoRemoto {
+    const errores: ErroresMantenimientoRemoto = {};
+    if (datos.unidadEquipoId === null || !idsUnidades.includes(datos.unidadEquipoId)) {
+        errores.unidadEquipoId = MENSAJES_MANTENIMIENTO_REMOTO.unidad;
+    }
+    if (!(TIPOS_MANTENIMIENTO as readonly string[]).includes(datos.tipo)) {
+        errores.tipo = MENSAJES_MANTENIMIENTO_REMOTO.tipo;
+    }
+    if (!(ESTADOS_MANTENIMIENTO as readonly string[]).includes(datos.estado)) {
+        errores.estado = MENSAJES_MANTENIMIENTO_REMOTO.estado;
+    }
+
+    const ingreso = datos.fechaIngreso.trim();
+    const estimada = datos.fechaEgresoEstimada.trim();
+    const real = datos.fechaEgresoReal.trim();
+    const ingresoValido = esFechaValida(ingreso);
+
+    if (!ingresoValido) errores.fechaIngreso = MENSAJES_MANTENIMIENTO_REMOTO.fecha;
+    if (!esFechaValida(estimada)) {
+        errores.fechaEgresoEstimada = MENSAJES_MANTENIMIENTO_REMOTO.fecha;
+    } else if (ingresoValido && estimada < ingreso) {
+        errores.fechaEgresoEstimada = MENSAJES_MANTENIMIENTO_REMOTO.egresoAnterior;
+    }
+    if (real !== '') {
+        if (!esFechaValida(real)) errores.fechaEgresoReal = MENSAJES_MANTENIMIENTO_REMOTO.fecha;
+        else if (ingresoValido && real < ingreso) {
+            errores.fechaEgresoReal = MENSAJES_MANTENIMIENTO_REMOTO.egresoAnterior;
+        }
     }
     return errores;
 }
