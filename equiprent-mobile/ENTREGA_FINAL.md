@@ -4,27 +4,28 @@
 
 | Dato | Valor |
 |---|---|
-| Estudiante | _Diana Boutier Vaca_ |
+| Estudiante | Diana Boutier Vaca |
 | Proyecto | **EquipRent**: alquiler de herramientas, maquinaria ligera y equipos |
 | Relación 1:N | **UnidadEquipo** (1) → **Mantenimiento** (N) — adapta Cliente → Vehículo de la guía |
 | Repositorio | `BoutierDiana/EquipRent` |
-| Rama y commit de entrega | `mobile/guia-15` · _(pegar `git rev-parse --short HEAD`)_ |
+| Rama y commit de entrega | `main` · `3f9eff7` (PR #12: código con el que se compiló el APK) |
 | Móvil | Expo SDK 56.0.24 · React Native 0.85.3 · React 19.2.3 · TypeScript 6.0 · expo-router (rutas tipadas) |
 | Backend | Java 21 · Spring Boot 3.2.5 (hexagonal) · Spring Security + JWT HS256 · Flyway V1–V4 |
 | Base de datos | PostgreSQL, puerto 5433, base `equiprent`, esquema `equiprent` |
-| Node usado | _(pegar `node -v`)_ |
-| Paquete Android | `bo.upsa.equiprent.mobile` (versión 1.0.0, versionCode 1) |
-| APK de prueba | _(https://expo.dev/accounts/dianabou/projects/equiprent-mobile/builds/8fa594f3-e9d0-493b-87bd-95479d9e7d78)_ |
-| Backend accesible en | _(ej. `http://192.168.0.15:8080/api` en la red del aula)_ |
+| Node usado | v26.9.0 (Windows 11) · EAS CLI 27.11.0 |
+| Paquete Android | `bo.upsa.equiprent.mobile` (versión 1.0.0, versionCode 1) · arm64-v8a, armeabi-v7a, x86, x86_64 |
+| APK de prueba | Compilación EAS `preview` (24-11-2026): [página del build](https://expo.dev/accounts/dianabou/projects/equiprent-mobile/builds/8fa594f3-e9d0-493b-87bd-95479d9e7d78) · [descarga directa del .apk](https://expo.dev/artifacts/eas/XOdGRxxpsFl4whx4QZdXJFwCA_4oE4bD057ku1pSEzM.apk) (104 MB) · instalada y abierta en un celular Android |
+| Backend accesible en | `http://192.168.1.20:8080/api`: Spring Boot en la PC, en la red Wi-Fi local (variable `EXPO_PUBLIC_API_URL` del entorno `preview` de EAS) |
 
 ## 2. Cómo se compila
 
-### Requisitos previos (una sola vez)
+### Requisitos previos (una sola vez) — ya realizados
 ```bash
-npm install -g eas-cli          # o usar "npx eas-cli@latest" en cada comando
-eas login                        # cuenta gratuita de expo.dev
-eas init                         # vincula el proyecto y agrega extra.eas.projectId a la configuración
+npm install -g eas-cli          # instalado: eas-cli 27.11.0
+eas login                        # cuenta de expo.dev: dianabou
+eas init                         # proyecto @dianabou/equiprent-mobile (projectId en app.json)
 ```
+La clave de firma (*keystore*) de Android la generó EAS en la nube y queda guardada en la cuenta. **Por qué se compila en EAS y no en la PC:** en Windows, CMake genera rutas de más de 260 caracteres al compilar el código nativo (react-native-screens, safe-area-context, gesture-handler) y la compilación falla. Los servidores de EAS usan Linux y no tienen ese límite.
 
 ### Verificar antes de compilar
 ```powershell
@@ -147,3 +148,4 @@ Explícalo con tus palabras. Estos son los puntos técnicos que conviene mencion
 | 13 | `mobile/guia-13` | Cámara, galería y subida de fotos multipart |
 | 14 | `mobile/guia-14` | Pruebas Vitest y CONTROL_QA |
 | 15 | `mobile/guia-15` | Compilación APK/AAB y entrega final |
+| — | `mobile/compilacion-apk` | Dependencias del SDK 56, arreglo foojay para Gradle 9, proyecto EAS y APK |
