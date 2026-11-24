@@ -1,5 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 import { unidadesApi, type ActualizarUnidadRequest, type UnidadEquipoDto } from '../infra/http/unidadesApi';
+import { mismaVersion } from './conflictos';
 
 /**
  * OFFLINE (Guía 12): caché SQLite de unidades + cola MANUAL de ediciones pendientes.
@@ -200,18 +201,6 @@ export async function buscarPendiente(unidadId: number): Promise<Pendiente | nul
 export async function descartarPendiente(unidadId: number): Promise<void> {
     const db = await database();
     await db.runAsync('DELETE FROM pending_updates WHERE unidad_id = ?', unidadId);
-}
-
-/** Compara los campos editables: ¿la unidad del servidor sigue igual que al descargarla? */
-function mismaVersion(a: UnidadEquipoDto, b: UnidadEquipoDto): boolean {
-    return (
-        a.equipoId === b.equipoId &&
-        a.numeroSerie === b.numeroSerie &&
-        a.estadoOperativo === b.estadoOperativo &&
-        Number(a.metricaUsoAcumulada) === Number(b.metricaUsoAcumulada) &&
-        (a.notasEstado ?? '') === (b.notasEstado ?? '') &&
-        a.activo === b.activo
-    );
 }
 
 /**
