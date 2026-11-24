@@ -4,7 +4,7 @@
 
 | Dato | Valor |
 |---|---|
-| Estudiante | _(completar)_ |
+| Estudiante | _Diana Boutier Vaca_ |
 | Proyecto | **EquipRent**: alquiler de herramientas, maquinaria ligera y equipos |
 | Relación 1:N | **UnidadEquipo** (1) → **Mantenimiento** (N) — adapta Cliente → Vehículo de la guía |
 | Repositorio | `BoutierDiana/EquipRent` |
@@ -14,7 +14,7 @@
 | Base de datos | PostgreSQL, puerto 5433, base `equiprent`, esquema `equiprent` |
 | Node usado | _(pegar `node -v`)_ |
 | Paquete Android | `bo.upsa.equiprent.mobile` (versión 1.0.0, versionCode 1) |
-| APK de prueba | _(enlace de EAS o ruta del archivo)_ |
+| APK de prueba | _(https://expo.dev/accounts/dianabou/projects/equiprent-mobile/builds/8fa594f3-e9d0-493b-87bd-95479d9e7d78)_ |
 | Backend accesible en | _(ej. `http://192.168.0.15:8080/api` en la red del aula)_ |
 
 ## 2. Cómo se compila

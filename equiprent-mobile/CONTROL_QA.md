@@ -67,7 +67,9 @@ Cada caso registra: ID, precondición, pasos, resultado esperado, resultado obte
 
 - **expo-doctor: Hermes V1 en Expo SDK 56.** Tiene una regresión de memoria conocida. Se corrige actualizando a Expo SDK 57 (`npx expo install expo@^57.0.9 --fix`). Está pendiente porque esa actualización cambia todas las dependencias nativas y necesita su propia rama y una prueba completa.
 - **Corregido en esta guía: `expo-font` duplicado (56 y 58).** Entró como dependencia indirecta y quedó fijado en `~56.0.7`, la versión del SDK.
-- **`npm install` sin `--force` falla por un conflicto de dependencias** que ya existía (`react-dom@19.3.1` pide `react@^19.3.1` y la app usa `19.2.3`). **No usar `--legacy-peer-deps`:** borra del lockfile dependencias necesarias como `react-dom` y `reanimated`.
+- **Corregido: conflicto de dependencias.** `react-dom@19.3.1` (pedía `react@^19.3.1`) quedó fijado en `19.2.3`, y `reanimated`/`worklets` en las versiones del SDK (4.3.1 / 0.8.3). Ahora `npm ci` funciona sin `--force`, igual que en EAS. **No usar `--legacy-peer-deps`:** borra dependencias necesarias del lockfile.
+- **Corregido: `foojay-resolver` 0.5.0 incompatible con Gradle 9.** El `postinstall` (`scripts/arreglar-foojay.js`) lo sube a 1.0.0.
+- **Compilación local en Windows:** CMake genera rutas de más de 260 caracteres en el código nativo (screens, safe-area, gesture-handler). Por eso el APK se compila con **EAS**, en Linux.
 
 ## 6. Reglas para las evidencias
 
