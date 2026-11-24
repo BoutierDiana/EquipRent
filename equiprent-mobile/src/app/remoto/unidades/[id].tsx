@@ -14,8 +14,8 @@ import { MantenimientoNavegable } from '../../../components/MantenimientoNavegab
 import { ReturnButton } from '../../../components/ReturnButton';
 import { MANTENIMIENTOS } from '../../../data/demoData';
 import type { UnidadEquipo } from '../../../models/equiprent';
-import { HttpError } from '../../../services/apiClient';
-import { unidadesService } from '../../../services/unidadesService';
+import { HttpError } from '../../../infra/http/apiClient';
+import { unidadesService } from '../../../infra/http/unidadesService';
 import { PALETTE } from '../../../theme/palette';
 import { leerIdPositivo } from '../../../utils/routeParams';
 

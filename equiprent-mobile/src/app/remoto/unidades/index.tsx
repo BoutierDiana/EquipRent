@@ -14,7 +14,7 @@ import { ReturnButton } from '../../../components/ReturnButton';
 import { UnidadEquipoCard } from '../../../components/UnidadEquipoCard';
 import { MANTENIMIENTOS } from '../../../data/demoData';
 import type { UnidadEquipo } from '../../../models/equiprent';
-import { unidadesService } from '../../../services/unidadesService';
+import { unidadesService } from '../../../infra/http/unidadesService';
 import { PALETTE } from '../../../theme/palette';
 
 /**

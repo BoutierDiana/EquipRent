@@ -1,4 +1,4 @@
-import type { UnidadEquipo } from '../models/equiprent';
+import type { UnidadEquipo } from '../../models/equiprent';
 import { requestHttp } from './apiClient';
 
 /**

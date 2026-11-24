@@ -1,4 +1,4 @@
-import type { Mantenimiento } from '../models/equiprent';
+import type { Mantenimiento } from '../../models/equiprent';
 import { requestHttp } from './apiClient';
 
 /**
