@@ -2,13 +2,13 @@ import React from 'react';
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MetricCard } from '../components/MetricCard';
-import { useEquipRent } from '../state/EquipRentContext';
+import { useEquipRentStats } from '../hooks/useEquipRentStats';
 import { PALETTE } from '../theme/palette';
 
 /** Ruta / : menú principal de EquipRent Mobile. */
 export default function InicioScreen() {
-    // Las métricas cambian en vivo al crear o eliminar registros (estado compartido).
-    const { unidades, mantenimientos } = useEquipRent();
+    // Guía 07: la pantalla no calcula nada; el hook entrega el resumen ya listo.
+    const resumen = useEquipRentStats();
     return (
         <ScrollView contentContainerStyle={styles.contenido}>
             <View style={styles.nodo}>
@@ -23,8 +23,15 @@ export default function InicioScreen() {
 
             {/* Métricas: el mismo componente reutilizado con props distintas */}
             <View style={styles.metricas}>
-                <MetricCard etiqueta="Unidades" valor={unidades.length} />
-                <MetricCard etiqueta="Mantenimientos" valor={mantenimientos.length} />
+                <MetricCard etiqueta="Unidades" valor={resumen.unidades} />
+                <MetricCard etiqueta="Mantenimientos" valor={resumen.mantenimientos} />
+            </View>
+            <View style={styles.metricas}>
+                <MetricCard etiqueta="Unidades activas" valor={resumen.unidadesActivas} />
+                <MetricCard etiqueta="Sin mantenimientos" valor={resumen.sinMantenimientos} />
+            </View>
+            <View style={styles.metricas}>
+                <MetricCard etiqueta="Costo activo (USD)" valor={resumen.costoTotal} />
             </View>
 
             <Text style={styles.subtitulo}>Módulos disponibles</Text>
@@ -71,6 +78,7 @@ export default function InicioScreen() {
                 recargar). El catálogo remoto consulta la API REST de Spring Boot.
             </Text>
             <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
+            <Text style={styles.capas}>Guía 07 · dominio · infraestructura · hooks · pantallas</Text>
         </ScrollView>
     );
 }
@@ -94,7 +102,7 @@ const styles = StyleSheet.create({
     etiqueta: { fontSize: 12, fontWeight: '800', color: PALETTE.acento, letterSpacing: 1 },
     titulo: { marginTop: 8, fontSize: 28, fontWeight: '800', color: PALETTE.principal },
     descripcion: { marginTop: 10, lineHeight: 22, color: PALETTE.secundario },
-    metricas: { flexDirection: 'row', gap: 12, marginTop: 20 },
+    metricas: { flexDirection: 'row', gap: 12, marginTop: 12 },
     subtitulo: {
         marginTop: 26,
         marginBottom: 12,
@@ -131,5 +139,6 @@ const styles = StyleSheet.create({
         borderColor: PALETTE.acento,
     },
     aviso: { marginTop: 24, lineHeight: 20, color: PALETTE.acento, fontSize: 13 },
+    capas: { marginTop: 6, textAlign: 'center', color: PALETTE.secundario, fontSize: 11 },
     pie: { marginTop: 10, textAlign: 'center', color: PALETTE.lima, fontWeight: '700', fontSize: 12 },
 });

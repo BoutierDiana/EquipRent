@@ -4,6 +4,7 @@ import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from '
 import { EmptyState } from '../../components/EmptyState';
 import { MantenimientoNavegable } from '../../components/MantenimientoNavegable';
 import { ReturnButton } from '../../components/ReturnButton';
+import { mantenimientosDe, puedeEliminarUnidad } from '../../domain/equiprentRules';
 import { useEquipRent } from '../../state/EquipRentContext';
 import { PALETTE } from '../../theme/palette';
 import { formatearCatalogo } from '../../utils/formato';
@@ -31,11 +32,11 @@ export default function DetalleUnidadScreen() {
     }
 
     // Relación 1:N: los mantenimientos cuyo unidadEquipoId coincide con esta unidad.
-    const asociados = mantenimientos.filter((m) => m.unidadEquipoId === unidad.id);
+    const asociados = mantenimientosDe(unidad.id, mantenimientos);
 
     function confirmarEliminar() {
         if (!unidad) return;
-        if (asociados.length > 0) {
+        if (!puedeEliminarUnidad(unidad.id, mantenimientos)) {
             Alert.alert(
                 'No se puede eliminar',
                 `${unidad.codigoInventario} tiene ${asociados.length} mantenimiento(s). ` +

@@ -4,6 +4,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { EmptyState } from '../../components/EmptyState';
 import { ReturnButton } from '../../components/ReturnButton';
 import { UnidadEquipoCard } from '../../components/UnidadEquipoCard';
+import { mantenimientosDe } from '../../domain/equiprentRules';
 import { useEquipRent } from '../../state/EquipRentContext';
 import { PALETTE } from '../../theme/palette';
 
@@ -43,9 +44,7 @@ export default function UnidadesScreen() {
             renderItem={({ item }) => (
                 <UnidadEquipoCard
                     unidad={item}
-                    cantidadMantenimientos={
-                        mantenimientos.filter((m) => m.unidadEquipoId === item.id).length
-                    }
+                    cantidadMantenimientos={mantenimientosDe(item.id, mantenimientos).length}
                     seleccionada={false}
                     alSeleccionar={() =>
                         router.push({ pathname: '/unidades/[id]', params: { id: String(item.id) } })
