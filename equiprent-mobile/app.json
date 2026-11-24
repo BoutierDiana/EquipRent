@@ -41,13 +41,6 @@
           "microphonePermission": false
         }
       ]
-    ],
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "68dbff8b-7250-469e-bdc6-e9d7e27198bb"
-      }
-    },
-    "owner": "dianabou"
+    ]
   }
 }
