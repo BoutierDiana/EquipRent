@@ -33,6 +33,7 @@ export default function RootLayout() {
                 <Stack.Screen name="mantenimientos/nuevo" options={{ title: 'Nueva Orden de Taller' }} />
                 <Stack.Screen name="mantenimientos/editar/[id]" options={{ title: 'Editar Orden' }} />
                 <Stack.Screen name="mantenimientos/[id]" options={{ title: 'Detalle de la Orden' }} />
+                <Stack.Screen name="diagnostico" options={{ title: 'Diagnóstico API' }} />
                 <Stack.Screen name="ayuda" options={{ title: 'Laboratorio y Pruebas' }} />
                 <Stack.Screen name="+not-found" options={{ title: 'Ruta desconocida' }} />
             </Stack>

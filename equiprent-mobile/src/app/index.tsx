@@ -67,6 +67,16 @@ export default function InicioScreen() {
                 </Pressable>
             </Link>
 
+            <Link href="/diagnostico" asChild>
+                <Pressable style={styles.boton} accessibilityRole="link">
+                    <View style={styles.botonFila}>
+                        <Text style={styles.botonTitulo}>Diagnóstico API</Text>
+                        <View style={styles.flecha} />
+                    </View>
+                    <Text style={styles.botonSub}>Probar la conexión Android → Spring Boot (/api/health)</Text>
+                </Pressable>
+            </Link>
+
             <Link href="/ayuda" asChild>
                 <Pressable style={styles.botonSuave} accessibilityRole="link">
                     <Text style={styles.botonTitulo}>Laboratorio y Casos Límite</Text>
@@ -78,7 +88,7 @@ export default function InicioScreen() {
                 recargar). El catálogo remoto consulta la API REST de Spring Boot.
             </Text>
             <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
-            <Text style={styles.capas}>Guía 07 · dominio · infraestructura · hooks · pantallas</Text>
+            <Text style={styles.capas}>Guía 08 · dominio · infra (local + http) · hooks · pantallas</Text>
         </ScrollView>
     );
 }
