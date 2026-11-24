@@ -36,6 +36,7 @@ export default function RemotoLayout() {
             <Stack.Screen name="mantenimientos/nuevo" options={{ title: 'Nueva Orden (API)' }} />
             <Stack.Screen name="mantenimientos/editar/[id]" options={{ title: 'Editar Orden (API)' }} />
             <Stack.Screen name="mantenimientos/[id]" options={{ title: 'Detalle Orden (API)' }} />
+            <Stack.Screen name="fotos" options={{ title: 'Evidencia fotográfica' }} />
             <Stack.Screen name="offline/index" options={{ title: 'Modo sin conexión' }} />
             <Stack.Screen name="offline/[id]" options={{ title: 'Editar sin conexión' }} />
         </Stack>

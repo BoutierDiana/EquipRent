@@ -74,6 +74,16 @@ export default function AreaRemotaScreen() {
                 </Pressable>
             </Link>
 
+            <Link href="/remoto/fotos" asChild>
+                <Pressable style={styles.boton} accessibilityRole="link">
+                    <View style={styles.botonFila}>
+                        <Text style={styles.botonTitulo}>Fotos de evidencia</Text>
+                        <View style={styles.flecha} />
+                    </View>
+                    <Text style={styles.botonSub}>Cámara · galería · subida multipart a Spring Boot</Text>
+                </Pressable>
+            </Link>
+
             <Link href="/diagnostico" asChild>
                 <Pressable style={styles.botonSuave} accessibilityRole="link">
                     <Text style={styles.botonTitulo}>Diagnóstico de conexión</Text>

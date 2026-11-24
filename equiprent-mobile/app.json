@@ -27,7 +27,15 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "EquipRent usa tus fotos para adjuntar evidencia a una orden de mantenimiento.",
+          "cameraPermission": "EquipRent usa la cámara para fotografiar el equipo en el taller.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }

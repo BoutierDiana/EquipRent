@@ -60,7 +60,11 @@ type CuerpoError = { message?: unknown; fieldErrors?: Record<string, string> };
  *  - Respuesta no JSON          -> HttpError 502
  *  - 4xx / 5xx                  -> HttpError con el mensaje del backend
  */
-export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+export async function requestHttp<T>(
+    ruta: string,
+    opciones: RequestInit = {},
+    tiempoLimiteMs: number = TIEMPO_LIMITE_MS
+): Promise<T> {
     if (!ruta.startsWith('/')) {
         throw new Error('La ruta debe comenzar con "/": el token solo viaja a API_BASE_URL.');
     }
@@ -68,7 +72,9 @@ export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): 
     // Guía 11: si hay sesión, se adjunta "Authorization: Bearer <token>".
     const token = await tokenStorage.leer().catch(() => null);
     const controlador = new AbortController();
-    const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
+    const temporizador = setTimeout(() => controlador.abort(), tiempoLimiteMs);
+    // Guía 13: con FormData NO se fija Content-Type; fetch agrega 'multipart/form-data; boundary=...'.
+    const esMultipart = typeof FormData !== 'undefined' && opciones.body instanceof FormData;
 
     let respuesta: Response;
     try {
@@ -77,14 +83,14 @@ export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): 
             signal: controlador.signal,
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/json',
+                ...(esMultipart ? {} : { 'Content-Type': 'application/json' }),
                 ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 ...opciones.headers,
             },
         });
     } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
-            throw new Error(`El servidor no respondió en ${TIEMPO_LIMITE_MS / 1000} segundos: ${url}`);
+            throw new Error(`El servidor no respondió en ${tiempoLimiteMs / 1000} segundos: ${url}`);
         }
         // Servidor apagado, IP incorrecta o sin Wi-Fi.
         throw new Error(`Fallo de conexión con el backend: No se pudo recuperar ${url}`);
@@ -136,6 +142,8 @@ export function mensajeDeError(error: unknown): string {
                   ? 'Datos rechazados'
                   : error.status === 401
                   ? 'Sesión requerida'
+                  : error.status === 413
+                  ? 'Archivo demasiado grande'
                   : error.status === 404
                     ? 'No encontrado'
                     : `Error ${error.status}`;
