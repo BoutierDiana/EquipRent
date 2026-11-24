@@ -27,7 +27,10 @@ export default function RootLayout() {
                 <Stack.Screen name="unidades/nuevo" options={{ title: 'Nueva Unidad' }} />
                 <Stack.Screen name="unidades/editar/[id]" options={{ title: 'Editar Unidad' }} />
                 <Stack.Screen name="unidades/[id]" options={{ title: 'Ficha de Unidad' }} />
-                <Stack.Screen name="remoto/unidades/index" options={{ title: 'Catálogo Remoto' }} />
+                <Stack.Screen name="remoto/index" options={{ title: 'Datos Persistidos' }} />
+                <Stack.Screen name="remoto/unidades/index" options={{ title: 'Unidades (API)' }} />
+                <Stack.Screen name="remoto/unidades/nuevo" options={{ title: 'Nueva Unidad (API)' }} />
+                <Stack.Screen name="remoto/unidades/editar/[id]" options={{ title: 'Editar Unidad (API)' }} />
                 <Stack.Screen name="remoto/unidades/[id]" options={{ title: 'Ficha Remota' }} />
                 <Stack.Screen name="mantenimientos/index" options={{ title: 'Órdenes de Taller' }} />
                 <Stack.Screen name="mantenimientos/nuevo" options={{ title: 'Nueva Orden de Taller' }} />

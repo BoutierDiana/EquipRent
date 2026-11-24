@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
 import {
     ActivityIndicator,
     FlatList,
@@ -11,59 +11,43 @@ import {
 } from 'react-native';
 import { EmptyState } from '../../../components/EmptyState';
 import { ReturnButton } from '../../../components/ReturnButton';
-import { UnidadEquipoCard } from '../../../components/UnidadEquipoCard';
-import { MANTENIMIENTOS } from '../../../data/demoData';
-import type { UnidadEquipo } from '../../../models/equiprent';
-import { unidadesService } from '../../../infra/http/unidadesService';
+import { UnidadRemotaCard } from '../../../components/UnidadRemotaCard';
+import { mensajeDeError } from '../../../infra/http/apiClient';
+import { unidadesApi, type UnidadEquipoDto } from '../../../infra/http/unidadesApi';
 import { PALETTE } from '../../../theme/palette';
 
 /**
- * Ruta /remoto/unidades : catálogo consumido desde GET /api/unidades-equipo.
- * Estados de la pantalla:
- *  - LOADING: cargando === true            -> ActivityIndicator
- *  - ERROR:   error !== null               -> mensaje + "Reintentar conexión"
- *  - EMPTY:   200 OK con []                -> ListEmptyComponent (EmptyState)
- *  - SUCCESS: 200 OK con registros         -> FlatList de tarjetas
+ * Ruta /remoto/unidades (Guía 09): catálogo PERSISTIDO en PostgreSQL.
+ * useFocusEffect vuelve a pedir la lista cada vez que la pantalla recibe el foco,
+ * así al volver de crear, editar o eliminar se ve el estado real de la base de datos.
+ * Estados: LOADING · ERROR (+ reintentar) · EMPTY (200 con []) · SUCCESS.
  */
-export default function UnidadesScreen() {
+export default function UnidadesRemotasScreen() {
     const router = useRouter();
-    const [unidades, setUnidades] = useState<UnidadEquipo[]>([]);
+    const [unidades, setUnidades] = useState<UnidadEquipoDto[]>([]);
     const [cargando, setCargando] = useState(true);
     const [refrescando, setRefrescando] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    // La pantalla NO conoce la URL: solo pide datos al servicio.
-    const cargarDatos = useCallback(async () => {
-        setCargando(true);
+    const cargar = useCallback(async (modo: 'inicial' | 'refresco') => {
+        if (modo === 'inicial') setCargando(true);
+        else setRefrescando(true);
         setError(null);
         try {
-            const datos = await unidadesService.obtenerTodas();
-            setUnidades(datos);
+            setUnidades(await unidadesApi.listar());
         } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido al cargar las unidades.');
+            setError(mensajeDeError(e));
         } finally {
             setCargando(false);
-        }
-    }, []);
-
-    // Pull-to-Refresh: repite el GET sin ocultar la lista actual.
-    const alRefrescar = useCallback(async () => {
-        setRefrescando(true);
-        setError(null);
-        try {
-            const datos = await unidadesService.obtenerTodas();
-            setUnidades(datos);
-        } catch (e) {
-            setError(e instanceof Error ? e.message : 'Error desconocido al refrescar.');
-        } finally {
             setRefrescando(false);
         }
     }, []);
 
-    // Se ejecuta una sola vez al montar la pantalla.
-    useEffect(() => {
-        void cargarDatos();
-    }, [cargarDatos]);
+    useFocusEffect(
+        useCallback(() => {
+            void cargar('inicial');
+        }, [cargar])
+    );
 
     if (cargando) {
         return (
@@ -80,7 +64,7 @@ export default function UnidadesScreen() {
                 <Text style={styles.errorTitulo}>Error de Comunicación</Text>
                 <Text style={styles.errorTexto}>{error}</Text>
                 <Pressable
-                    onPress={() => void cargarDatos()}
+                    onPress={() => void cargar('inicial')}
                     accessibilityRole="button"
                     accessibilityLabel="Reintentar conexión"
                     style={({ pressed }) => [styles.reintentar, pressed && styles.presionado]}
@@ -94,12 +78,12 @@ export default function UnidadesScreen() {
     return (
         <FlatList
             data={unidades}
-            keyExtractor={(unidad) => String(unidad.id)}
+            keyExtractor={(u) => String(u.id)}
             contentContainerStyle={styles.contenido}
             refreshControl={
                 <RefreshControl
                     refreshing={refrescando}
-                    onRefresh={alRefrescar}
+                    onRefresh={() => void cargar('refresco')}
                     colors={[PALETTE.acento]}
                     tintColor={PALETTE.lima}
                     progressBackgroundColor={PALETTE.superficie}
@@ -107,21 +91,23 @@ export default function UnidadesScreen() {
             }
             ListHeaderComponent={
                 <View style={styles.encabezado}>
-                    <ReturnButton destinoSiNoHayHistorial="/" />
-                    <Text style={styles.titulo}>Catálogo de Maquinaria</Text>
-                    <Text style={styles.ayuda}>
-                        Activos operativos sincronizados en tiempo real mediante API REST.
-                    </Text>
+                    <ReturnButton destinoSiNoHayHistorial="/remoto" />
+                    <Text style={styles.titulo}>Unidades en PostgreSQL</Text>
+                    <Text style={styles.ayuda}>CRUD REST real: los cambios sobreviven al recargar la app.</Text>
+                    <Link href="/remoto/unidades/nuevo" asChild>
+                        <Pressable
+                            style={({ pressed }) => [styles.nuevo, pressed && styles.presionado]}
+                            accessibilityRole="link"
+                            accessibilityLabel="Registrar unidad remota"
+                        >
+                            <Text style={styles.nuevoTexto}>+ Registrar unidad REMOTA</Text>
+                        </Pressable>
+                    </Link>
                 </View>
             }
             renderItem={({ item }) => (
-                <UnidadEquipoCard
+                <UnidadRemotaCard
                     unidad={item}
-                    cantidadMantenimientos={
-                        MANTENIMIENTOS.filter((m) => m.unidadEquipoId === item.id).length
-                    }
-                    seleccionada={false}
-                    // La pantalla decide el efecto: abrir la ficha enviando solo el ID.
                     alSeleccionar={() =>
                         router.push({ pathname: '/remoto/unidades/[id]', params: { id: String(item.id) } })
                     }
@@ -144,6 +130,15 @@ const styles = StyleSheet.create({
     encabezado: { marginBottom: 12 },
     titulo: { fontSize: 23, fontWeight: '800', color: PALETTE.principal },
     ayuda: { marginTop: 8, color: PALETTE.secundario, lineHeight: 21 },
+    nuevo: {
+        marginTop: 16,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: PALETTE.acento,
+        borderRadius: 10,
+    },
+    nuevoTexto: { color: PALETTE.principal, fontWeight: '800', letterSpacing: 1 },
     pie: { textAlign: 'center', color: PALETTE.acento, marginTop: 12, fontSize: 12 },
     centro: {
         flex: 1,

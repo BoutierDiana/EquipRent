@@ -1,7 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useLocalSearchParams } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { Link, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import {
     ActivityIndicator,
+    Alert,
     Platform,
     Pressable,
     ScrollView,
@@ -10,66 +11,86 @@ import {
     View,
 } from 'react-native';
 import { EmptyState } from '../../../components/EmptyState';
-import { MantenimientoNavegable } from '../../../components/MantenimientoNavegable';
 import { ReturnButton } from '../../../components/ReturnButton';
-import { MANTENIMIENTOS } from '../../../data/demoData';
-import type { UnidadEquipo } from '../../../models/equiprent';
-import { HttpError } from '../../../infra/http/apiClient';
-import { unidadesService } from '../../../infra/http/unidadesService';
+import { nombreEquipo } from '../../../data/catalogoEquipos';
+import { HttpError, mensajeDeError } from '../../../infra/http/apiClient';
+import { unidadesApi, type UnidadEquipoDto } from '../../../infra/http/unidadesApi';
 import { PALETTE } from '../../../theme/palette';
+import { formatearCatalogo, formatearFecha } from '../../../utils/formato';
 import { leerIdPositivo } from '../../../utils/routeParams';
 
-/** Ruta /remoto/unidades/1, /remoto/unidades/2 ... : ficha de la unidad y sus N mantenimientos. */
-export default function DetalleUnidadScreen() {
+/**
+ * Ruta /remoto/unidades/[id] (Guía 09): ficha PERSISTIDA, editar y eliminar.
+ * DELETE devuelve 409 si la unidad tiene mantenimientos: la regla 1:N la
+ * hace cumplir el SERVIDOR, no solo el móvil.
+ */
+export default function DetalleUnidadRemotaScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
+    const router = useRouter();
     const unidadId = leerIdPositivo(id);
 
-    const [unidad, setUnidad] = useState<UnidadEquipo | null>(null);
+    const [unidad, setUnidad] = useState<UnidadEquipoDto | null>(null);
     const [cargando, setCargando] = useState(unidadId !== null);
     const [error, setError] = useState<string | null>(null);
     const [noEncontrada, setNoEncontrada] = useState(false);
+    const [eliminando, setEliminando] = useState(false);
 
-    // El id de la ruta viaja al backend: GET /api/unidades-equipo/{id}
-    const cargarDatos = useCallback(async () => {
-        if (unidadId === null) {
-            return;
-        }
+    const cargar = useCallback(async () => {
+        if (unidadId === null) return;
         setCargando(true);
         setError(null);
         setNoEncontrada(false);
         try {
-            setUnidad(await unidadesService.obtenerPorId(unidadId));
+            setUnidad(await unidadesApi.obtener(unidadId));
         } catch (e) {
-            if (e instanceof HttpError && e.status === 404) {
-                setNoEncontrada(true); // error de DATOS, no de red
-            } else {
-                setError(e instanceof Error ? e.message : 'Error desconocido al cargar la unidad.');
-            }
+            if (e instanceof HttpError && e.status === 404) setNoEncontrada(true);
+            else setError(mensajeDeError(e));
         } finally {
             setCargando(false);
         }
     }, [unidadId]);
 
-    useEffect(() => {
-        void cargarDatos();
-    }, [cargarDatos]);
+    // Se recarga al volver de la edición para mostrar los datos guardados.
+    useFocusEffect(
+        useCallback(() => {
+            void cargar();
+        }, [cargar])
+    );
 
-    // ID mal formado ('abc', '0', '-1'): se rechaza ANTES de consultar el backend.
+    function confirmarEliminar() {
+        if (!unidad || eliminando) return;
+        Alert.alert('Eliminar de PostgreSQL', `¿Eliminar la unidad ${unidad.numeroSerie}?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Eliminar',
+                style: 'destructive',
+                onPress: () => void eliminar(unidad.id),
+            },
+        ]);
+    }
+
+    async function eliminar(idUnidad: number) {
+        setEliminando(true);
+        try {
+            await unidadesApi.eliminar(idUnidad); // 204 No Content
+            router.replace('/remoto/unidades');
+        } catch (e) {
+            Alert.alert('No fue posible eliminar', mensajeDeError(e));
+        } finally {
+            setEliminando(false);
+        }
+    }
+
     if (unidadId === null || noEncontrada) {
         return (
             <View style={styles.contenido}>
                 <ReturnButton destinoSiNoHayHistorial="/remoto/unidades" />
-                <EmptyState mensaje="No se encontró la unidad de equipo solicitada o su ID no es válido." />
-                <Link href="/remoto/unidades" asChild>
-                    <Pressable style={styles.accion} accessibilityRole="link">
-                        <Text style={styles.accionTexto}>Ir al catálogo de unidades</Text>
-                    </Pressable>
-                </Link>
+                <EmptyState mensaje="No existe esa unidad en PostgreSQL (404) o su ID no es válido." />
             </View>
         );
     }
 
-    if (cargando) {
+    if (cargando && !unidad) {
         return (
             <View style={styles.centro}>
                 <ActivityIndicator size="large" color={PALETTE.lima} />
@@ -83,7 +104,7 @@ export default function DetalleUnidadScreen() {
                 <Text style={styles.errorTitulo}>Error de Comunicación</Text>
                 <Text style={styles.errorTexto}>{error}</Text>
                 <Pressable
-                    onPress={() => void cargarDatos()}
+                    onPress={() => void cargar()}
                     accessibilityRole="button"
                     accessibilityLabel="Reintentar conexión"
                     style={styles.reintentar}
@@ -94,56 +115,62 @@ export default function DetalleUnidadScreen() {
         );
     }
 
-    // Relación 1:N: los mantenimientos cuyo unidadEquipoId coincide con la unidad.
-    // (Datos locales de demostración: el contrato del backend de Mantenimiento
-    // todavía no incluye descripcion ni costo.)
-    const mantenimientos = MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidad.id);
-
     return (
         <ScrollView contentContainerStyle={styles.contenido}>
             <ReturnButton destinoSiNoHayHistorial="/remoto/unidades" />
 
             <View style={styles.ficha}>
-                <Text style={styles.codigo}>{unidad.codigoInventario}</Text>
-                <Text style={styles.titulo}>
-                    {unidad.marca} {unidad.modelo}
-                </Text>
-                <View style={styles.filaDato}>
-                    <Text style={styles.datoEtiqueta}>N.º de Serie:</Text>
-                    <Text style={styles.datoValor}>{unidad.numeroSerie}</Text>
-                </View>
-                <View style={styles.filaDato}>
-                    <Text style={styles.datoEtiqueta}>Estado Operativo:</Text>
-                    <Text style={styles.datoLima}>{unidad.estadoOperativo}</Text>
-                </View>
-                <View style={styles.filaDato}>
-                    <Text style={styles.datoEtiqueta}>Registro:</Text>
-                    <Text style={styles.datoValor}>{unidad.activo ? 'ACTIVA' : 'INACTIVA'}</Text>
-                </View>
+                <Text style={styles.codigo}>ID BD {unidad.id} · {unidad.numeroSerie}</Text>
+                <Text style={styles.titulo}>{nombreEquipo(unidad.equipoId)}</Text>
+                <Fila etiqueta="Estado operativo" valor={formatearCatalogo(unidad.estadoOperativo)} lima />
+                <Fila etiqueta="Uso acumulado" valor={`${unidad.metricaUsoAcumulada} h`} />
+                <Fila etiqueta="Registro" valor={unidad.activo ? 'ACTIVA' : 'INACTIVA'} />
+                <Fila etiqueta="Creada" valor={formatearFecha(unidad.createdAt)} />
+                <Text style={styles.notas}>{unidad.notasEstado ?? 'Sin notas de estado.'}</Text>
             </View>
 
-            <Text style={styles.subtitulo}>
-                Historial de Mantenimientos (1:N) · {mantenimientos.length}
+            <Link href={{ pathname: '/remoto/unidades/editar/[id]', params: { id: String(unidad.id) } }} asChild>
+                <Pressable
+                    style={({ pressed }) => [styles.boton, pressed && styles.presionado]}
+                    accessibilityRole="link"
+                    accessibilityLabel="Editar unidad remota"
+                >
+                    <Text style={styles.botonTexto}>Editar en PostgreSQL</Text>
+                </Pressable>
+            </Link>
+            <Pressable
+                onPress={confirmarEliminar}
+                disabled={eliminando}
+                style={({ pressed }) => [styles.peligro, (pressed || eliminando) && styles.presionado]}
+                accessibilityRole="button"
+                accessibilityLabel="Eliminar unidad remota"
+            >
+                {eliminando ? (
+                    <ActivityIndicator color={PELIGRO} />
+                ) : (
+                    <Text style={styles.peligroTexto}>Eliminar en PostgreSQL</Text>
+                )}
+            </Pressable>
+
+            <Text style={styles.pie}>
+                Si la unidad tiene mantenimientos, el backend rechaza la eliminación con 409.
+                Los mantenimientos persistidos se muestran en la Guía 10.
             </Text>
-
-            {mantenimientos.length === 0 ? (
-                <EmptyState mensaje="Esta unidad no registra órdenes de taller preventivo ni correctivo." />
-            ) : (
-                mantenimientos.map((m) => (
-                    <MantenimientoNavegable
-                        key={m.id}
-                        mantenimiento={m}
-                        codigoUnidad={unidad.codigoInventario}
-                    />
-                ))
-            )}
-
-            <Text style={styles.pie}>Una unidad puede tener cero, uno o varios mantenimientos.</Text>
         </ScrollView>
     );
 }
 
+function Fila({ etiqueta, valor, lima = false }: { etiqueta: string; valor: string; lima?: boolean }) {
+    return (
+        <View style={styles.filaDato}>
+            <Text style={styles.datoEtiqueta}>{etiqueta}:</Text>
+            <Text style={lima ? styles.datoLima : styles.datoValor}>{valor}</Text>
+        </View>
+    );
+}
+
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
+const PELIGRO = '#f87171';
 
 const styles = StyleSheet.create({
     contenido: { padding: 18, paddingBottom: 40 },
@@ -152,12 +179,12 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: PALETTE.borde,
         borderLeftWidth: 3,
-        borderLeftColor: PALETTE.lima,
+        borderLeftColor: PALETTE.acento,
         borderRadius: 12,
         padding: 16,
     },
     codigo: { fontFamily: MONO, color: PALETTE.lima, fontWeight: '700' },
-    titulo: { marginTop: 6, fontSize: 24, color: PALETTE.principal, fontWeight: '800' },
+    titulo: { marginTop: 6, fontSize: 22, color: PALETTE.principal, fontWeight: '800' },
     filaDato: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -169,18 +196,30 @@ const styles = StyleSheet.create({
     datoEtiqueta: { color: PALETTE.secundario },
     datoValor: { fontFamily: MONO, color: PALETTE.principal, fontWeight: '700' },
     datoLima: { color: PALETTE.lima, fontWeight: '800' },
-    subtitulo: {
-        fontSize: 17,
-        fontWeight: '800',
-        marginTop: 24,
-        marginBottom: 12,
-        color: PALETTE.principal,
+    notas: { marginTop: 12, color: PALETTE.secundario, fontStyle: 'italic', lineHeight: 20 },
+    boton: {
+        marginTop: 16,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: PALETTE.acento,
+        borderRadius: 10,
     },
-    pie: { color: PALETTE.secundario, textAlign: 'center', marginTop: 14, fontSize: 12 },
-    accion: { marginTop: 16, backgroundColor: PALETTE.acentoClaro, padding: 16, borderRadius: 12 },
-    accionTexto: { color: PALETTE.principal, fontWeight: '700', textAlign: 'center' },
+    botonTexto: { color: PALETTE.principal, fontWeight: '800', letterSpacing: 1 },
+    peligro: {
+        marginTop: 10,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: PELIGRO,
+        borderRadius: 10,
+    },
+    peligroTexto: { color: PELIGRO, fontWeight: '800', letterSpacing: 1 },
+    presionado: { opacity: 0.7 },
+    pie: { color: PALETTE.secundario, textAlign: 'center', marginTop: 16, fontSize: 12, lineHeight: 18 },
     centro: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-    errorTitulo: { color: '#f87171', fontSize: 20, fontWeight: '800' },
+    errorTitulo: { color: PELIGRO, fontSize: 20, fontWeight: '800' },
     errorTexto: { marginTop: 10, color: PALETTE.secundario, textAlign: 'center', lineHeight: 20 },
     reintentar: {
         marginTop: 20,

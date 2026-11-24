@@ -87,7 +87,7 @@ export function validarMantenimiento(
 }
 
 /** true si existe al menos un mensaje de error. */
-export function tieneErrores(errores: ErroresMantenimiento | ErroresUnidad): boolean {
+export function tieneErrores(errores: ErroresMantenimiento | ErroresUnidad | ErroresUnidadRemota): boolean {
     return Object.keys(errores).length > 0;
 }
 
@@ -177,6 +177,65 @@ export function validarUnidad(
     }
     if (!(ESTADOS_OPERATIVOS as readonly string[]).includes(datos.estadoOperativo)) {
         errores.estadoOperativo = MENSAJES_UNIDAD.estado;
+    }
+    return errores;
+}
+
+
+// ---------------------------------------------------------------------------
+// Guía 09: formulario de UnidadEquipo REMOTA (contrato de Spring Boot).
+// Repite las reglas de @Valid del backend para avisar ANTES de enviar;
+// el backend vuelve a validar y su respuesta 400/409 manda.
+// ---------------------------------------------------------------------------
+
+export type UnidadRemotaFormulario = {
+    equipoId: number | null;
+    numeroSerie: string;
+    estadoOperativo: string;
+    metricaUsoAcumulada: string; // texto mientras se escribe
+    notasEstado: string;
+    activo: boolean;
+};
+
+export type ErroresUnidadRemota = Partial<
+    Record<'equipoId' | 'numeroSerie' | 'estadoOperativo' | 'metricaUsoAcumulada', string>
+>;
+
+export const UNIDAD_REMOTA_VACIA: UnidadRemotaFormulario = {
+    equipoId: null,
+    numeroSerie: '',
+    estadoOperativo: 'DISPONIBLE',
+    metricaUsoAcumulada: '0',
+    notasEstado: '',
+    activo: true,
+};
+
+export const MENSAJES_UNIDAD_REMOTA = {
+    equipo: 'Selecciona un equipo del catálogo.',
+    serie: 'El número de serie debe tener entre 5 y 50 caracteres.',
+    estado: MENSAJES_UNIDAD.estado,
+    metrica: 'La métrica de uso debe ser un número mayor o igual a 0.',
+} as const;
+
+/** Valida igual que CrearUnidadEquipoRequest / ActualizarUnidadEquipoRequest. */
+export function validarUnidadRemota(
+    datos: UnidadRemotaFormulario,
+    idsEquipos: readonly number[]
+): ErroresUnidadRemota {
+    const errores: ErroresUnidadRemota = {};
+    if (datos.equipoId === null || !idsEquipos.includes(datos.equipoId)) {
+        errores.equipoId = MENSAJES_UNIDAD_REMOTA.equipo;
+    }
+    const serie = normalizarCodigo(datos.numeroSerie);
+    if (serie.length < 5 || serie.length > 50) {
+        errores.numeroSerie = MENSAJES_UNIDAD_REMOTA.serie;
+    }
+    if (!(ESTADOS_OPERATIVOS as readonly string[]).includes(datos.estadoOperativo)) {
+        errores.estadoOperativo = MENSAJES_UNIDAD_REMOTA.estado;
+    }
+    const metrica = leerCosto(datos.metricaUsoAcumulada); // mismo parseo decimal (coma o punto)
+    if (!Number.isFinite(metrica) || metrica < 0) {
+        errores.metricaUsoAcumulada = MENSAJES_UNIDAD_REMOTA.metrica;
     }
     return errores;
 }
