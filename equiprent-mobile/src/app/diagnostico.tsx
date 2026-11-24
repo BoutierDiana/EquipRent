@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import Constants from 'expo-constants';
 import { ReturnButton } from '../components/ReturnButton';
 import { API_BASE_URL, HttpError } from '../infra/http/apiClient';
 import { healthApi, type ResultadoSalud } from '../infra/http/healthApi';
@@ -45,6 +46,22 @@ export default function DiagnosticoScreen() {
                 <Text style={styles.ayuda}>
                     En el emulador Android, 10.0.2.2 apunta a la PC anfitriona. En un teléfono
                     físico usa la IP de tu PC en el Wi-Fi (archivo .env.local).
+                </Text>
+                {API_BASE_URL.startsWith('http://') && (
+                    <Text style={styles.avisoHttp}>
+                        HTTP sin cifrar: válido solo en clase. El token viaja legible en la red; en
+                        producción usa HTTPS (el perfil production de EAS bloquea HTTP).
+                    </Text>
+                )}
+            </View>
+
+            {/* Guía 15: identifica QUÉ compilación está instalada (útil al defender el APK). */}
+            <View style={styles.ficha}>
+                <Text style={styles.etiqueta}>COMPILACIÓN</Text>
+                <Text style={styles.mono}>
+                    v{Constants.expoConfig?.version ?? '?'} · {Platform.OS} ·{' '}
+                    {String(Constants.expoConfig?.extra?.perfilCompilacion ?? 'development')}
+                    {__DEV__ ? ' · modo DEV' : ' · release'}
                 </Text>
             </View>
 
@@ -107,6 +124,7 @@ const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
 const ROJO = '#f87171';
 
 const styles = StyleSheet.create({
+    avisoHttp: { marginTop: 10, color: PALETTE.inactivo, lineHeight: 20, fontSize: 13 },
     contenido: { padding: 18, paddingBottom: 40 },
     titulo: { fontSize: 23, fontWeight: '800', color: PALETTE.principal },
     ficha: {
