@@ -63,7 +63,7 @@ export default function InicioScreen() {
                         <Text style={styles.botonTitulo}>Datos persistidos (API)</Text>
                         <View style={styles.flecha} />
                     </View>
-                    <Text style={styles.botonSub}>CRUD real de unidades y mantenimientos (Spring Boot + PostgreSQL)</Text>
+                    <Text style={styles.botonSub}>Requiere iniciar sesión (JWT) · Spring Boot + PostgreSQL</Text>
                 </Pressable>
             </Link>
 
@@ -88,7 +88,7 @@ export default function InicioScreen() {
                 recargar). El catálogo remoto consulta la API REST de Spring Boot.
             </Text>
             <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
-            <Text style={styles.capas}>Guía 10 · dominio · infra (local + http) · hooks · pantallas</Text>
+            <Text style={styles.capas}>Guía 11 · dominio · infra (local + http) · hooks · pantallas</Text>
         </ScrollView>
     );
 }

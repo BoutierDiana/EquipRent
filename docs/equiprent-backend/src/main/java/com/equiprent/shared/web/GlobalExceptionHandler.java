@@ -1,5 +1,6 @@
 package com.equiprent.shared.web;
 
+import com.equiprent.auth.web.CredencialesInvalidasException;
 import com.equiprent.shared.domain.exception.ConflictoNegocioException;
 import com.equiprent.shared.domain.exception.RecursoNoEncontradoException;
 import com.equiprent.shared.domain.exception.ReglaNegocioException;
@@ -27,6 +28,7 @@ import java.util.Map;
  * Traduce excepciones a respuestas HTTP con un cuerpo ApiError uniforme.
  * Mapa de estados:
  *   400 -> validación de DTO, JSON/fechas mal formados, id no numérico, regla de negocio
+ *   401 -> credenciales incorrectas en /api/auth/login (Guía 11)
  *   404 -> recurso inexistente o ruta inexistente
  *   405 -> método HTTP no soportado por la ruta
  *   409 -> conflicto con los datos actuales (duplicados, dependencias, integridad)
@@ -37,6 +39,12 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    // 401 - Unauthorized (login con usuario o contraseña incorrectos)
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<ApiError> handleCredenciales(CredencialesInvalidasException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.UNAUTHORIZED, ex.getMessage(), request.getRequestURI(), Map.of());
+    }
 
     // 404 - Not Found (UnidadEquipoNoEncontradaException, MantenimientoNoEncontradoException)
     @ExceptionHandler(RecursoNoEncontradoException.class)

@@ -9,6 +9,7 @@ import com.equiprent.unidadequipo.domain.port.in.EliminarUnidadEquipoUseCase;
 import com.equiprent.unidadequipo.domain.port.in.RegistrarUnidadEquipoUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -28,6 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Prueba la capa web aislada (sin base de datos): contrato HTTP y mapeo de errores a 400/404/409.
  */
 @WebMvcTest(UnidadEquipoController.class)
+// Guía 11: estas pruebas verifican el contrato HTTP, no la seguridad (ver SeguridadJwtTest).
+@AutoConfigureMockMvc(addFilters = false)
 class UnidadEquipoControllerTest {
 
     @Autowired
