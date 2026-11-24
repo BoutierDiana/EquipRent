@@ -1,3 +1,5 @@
+import { tokenStorage } from '../../security/tokenStorage';
+
 // INFRAESTRUCTURA HTTP (Guía 08): cliente HTTP único de EquipRent Mobile.
 // Las pantallas NO llaman a fetch directamente: pasan por los servicios
 // (unidadesApi, mantenimientosApi, healthApi) y los servicios pasan por aquí.
@@ -33,6 +35,15 @@ export class HttpError extends Error {
     }
 }
 
+/**
+ * Guía 11: función que se ejecuta cuando el backend responde 401 a una ruta protegida
+ * (token vencido o inválido). AuthContext la registra para cerrar la sesión.
+ */
+let alNoAutorizado: (() => void) | null = null;
+export function registrarAlNoAutorizado(funcion: (() => void) | null): void {
+    alNoAutorizado = funcion;
+}
+
 /** Forma del cuerpo de error que devuelve el backend (record ApiError). */
 type CuerpoError = { message?: unknown; fieldErrors?: Record<string, string> };
 
@@ -50,7 +61,12 @@ type CuerpoError = { message?: unknown; fieldErrors?: Record<string, string> };
  *  - 4xx / 5xx                  -> HttpError con el mensaje del backend
  */
 export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): Promise<T> {
+    if (!ruta.startsWith('/')) {
+        throw new Error('La ruta debe comenzar con "/": el token solo viaja a API_BASE_URL.');
+    }
     const url = `${API_BASE_URL}${ruta}`;
+    // Guía 11: si hay sesión, se adjunta "Authorization: Bearer <token>".
+    const token = await tokenStorage.leer().catch(() => null);
     const controlador = new AbortController();
     const temporizador = setTimeout(() => controlador.abort(), TIEMPO_LIMITE_MS);
 
@@ -62,6 +78,7 @@ export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): 
             headers: {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 ...opciones.headers,
             },
         });
@@ -89,6 +106,10 @@ export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): 
     }
 
     if (!respuesta.ok) {
+        // 401 en una ruta protegida = la sesión ya no sirve (el 401 del login es "clave mala").
+        if (respuesta.status === 401 && token && ruta !== '/auth/login') {
+            alNoAutorizado?.();
+        }
         const cuerpo = (datos ?? {}) as CuerpoError;
         const mensaje =
             typeof cuerpo.message === 'string' && cuerpo.message
@@ -113,6 +134,8 @@ export function mensajeDeError(error: unknown): string {
                 ? 'Conflicto'
                 : error.status === 400
                   ? 'Datos rechazados'
+                  : error.status === 401
+                  ? 'Sesión requerida'
                   : error.status === 404
                     ? 'No encontrado'
                     : `Error ${error.status}`;

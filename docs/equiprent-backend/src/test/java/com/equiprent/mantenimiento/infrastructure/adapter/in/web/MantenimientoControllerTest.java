@@ -8,6 +8,7 @@ import com.equiprent.mantenimiento.domain.port.in.RegistrarMantenimientoUseCase;
 import com.equiprent.unidadequipo.domain.exception.UnidadEquipoNoEncontradaException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -22,6 +23,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MantenimientoController.class)
+// Guía 11: estas pruebas verifican el contrato HTTP, no la seguridad (ver SeguridadJwtTest).
+@AutoConfigureMockMvc(addFilters = false)
 class MantenimientoControllerTest {
 
     @Autowired

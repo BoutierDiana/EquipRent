@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { ReturnButton } from '../../components/ReturnButton';
 import { API_BASE_URL } from '../../infra/http/apiClient';
+import { useAuth } from '../../state/AuthContext';
 import { PALETTE } from '../../theme/palette';
 
 /**
@@ -11,6 +12,14 @@ import { PALETTE } from '../../theme/palette';
  * /unidades y /mantenimientos siguen siendo el laboratorio LOCAL (Guías 05–07).
  */
 export default function AreaRemotaScreen() {
+    const router = useRouter();
+    const { usuario, logout } = useAuth();
+
+    async function cerrarSesion() {
+        await logout(); // borra el token de SecureStore
+        router.replace('/');
+    }
+
     return (
         <ScrollView contentContainerStyle={styles.contenido}>
             <ReturnButton destinoSiNoHayHistorial="/" />
@@ -21,6 +30,19 @@ export default function AreaRemotaScreen() {
                 laboratorio local: aquí los cambios sobreviven al recargar la app.
             </Text>
             <Text style={styles.url}>{API_BASE_URL}</Text>
+
+            <View style={styles.sesion}>
+                <View style={styles.punto} />
+                <Text style={styles.sesionTexto}>Sesión: {usuario ?? 'usuario'} · JWT en SecureStore</Text>
+                <Pressable
+                    onPress={() => void cerrarSesion()}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cerrar sesión"
+                    style={styles.salir}
+                >
+                    <Text style={styles.salirTexto}>SALIR</Text>
+                </Pressable>
+            </View>
 
             <Link href="/remoto/unidades" asChild>
                 <Pressable style={styles.boton} accessibilityRole="link">
@@ -56,7 +78,21 @@ const styles = StyleSheet.create({
     etiqueta: { fontSize: 12, fontWeight: '800', color: PALETTE.acento, letterSpacing: 1 },
     titulo: { marginTop: 6, fontSize: 24, fontWeight: '800', color: PALETTE.principal },
     ayuda: { marginTop: 10, color: PALETTE.secundario, lineHeight: 21 },
-    url: { marginTop: 8, marginBottom: 18, color: PALETTE.lima, fontSize: 12 },
+    url: { marginTop: 8, marginBottom: 12, color: PALETTE.lima, fontSize: 12 },
+    sesion: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        borderWidth: 1,
+        borderColor: PALETTE.borde,
+        borderRadius: 10,
+        padding: 10,
+        marginBottom: 18,
+    },
+    punto: { width: 8, height: 8, borderRadius: 4, backgroundColor: PALETTE.lima },
+    sesionTexto: { flex: 1, color: PALETTE.secundario, fontSize: 12 },
+    salir: { borderWidth: 1, borderColor: '#f87171', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+    salirTexto: { color: '#f87171', fontWeight: '800', fontSize: 11, letterSpacing: 1 },
     boton: {
         backgroundColor: PALETTE.superficie,
         borderRadius: 12,
