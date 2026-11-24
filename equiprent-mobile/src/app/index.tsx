@@ -46,7 +46,7 @@ export default function InicioScreen() {
                         <Text style={styles.botonTitulo}>Órdenes de Taller</Text>
                         <View style={styles.flecha} />
                     </View>
-                    <Text style={styles.botonSub}>Historia global de servicios y costos</Text>
+                    <Text style={styles.botonSub}>Crear, editar y eliminar órdenes (relación 1:N, local)</Text>
                 </Pressable>
             </Link>
 

@@ -99,6 +99,19 @@ export default function DetalleUnidadScreen() {
 
             <Text style={styles.subtitulo}>Historial de Mantenimientos (1:N) · {asociados.length}</Text>
 
+            <Link
+                href={{ pathname: '/mantenimientos/nuevo', params: { unidadId: String(unidad.id) } }}
+                asChild
+            >
+                <Pressable
+                    style={({ pressed }) => [styles.secundario, pressed && styles.presionado]}
+                    accessibilityRole="link"
+                    accessibilityLabel={`Nueva orden para ${unidad.codigoInventario}`}
+                >
+                    <Text style={styles.secundarioTexto}>+ Nueva orden para esta unidad</Text>
+                </Pressable>
+            </Link>
+
             {asociados.length === 0 ? (
                 <EmptyState mensaje="Esta unidad no registra órdenes de taller preventivo ni correctivo." />
             ) : (
@@ -163,6 +176,17 @@ const styles = StyleSheet.create({
     },
     peligroTexto: { color: PELIGRO, fontWeight: '800', letterSpacing: 1 },
     presionado: { opacity: 0.85 },
+    secundario: {
+        minHeight: 46,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: PALETTE.acentoClaro,
+        borderWidth: 1,
+        borderColor: PALETTE.acento,
+        borderRadius: 10,
+        marginBottom: 12,
+    },
+    secundarioTexto: { color: PALETTE.lima, fontWeight: '800', letterSpacing: 1 },
     subtitulo: {
         fontSize: 17,
         fontWeight: '800',

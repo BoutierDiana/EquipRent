@@ -3,9 +3,13 @@
 // devuelven los mensajes de error. Validar en el móvil mejora la experiencia,
 // pero NO reemplaza la validación de Spring Boot (@Valid -> 400 Bad Request).
 
+/** Catálogo de tipos de mantenimiento (mismo CHECK que en PostgreSQL). */
+export const TIPOS_MANTENIMIENTO = ['PREVENTIVO', 'CORRECTIVO'] as const;
+
 /** Valores del formulario tal como los escribe el usuario (texto). */
 export type MantenimientoFormulario = {
     unidadEquipoId: number | null;
+    tipoMantenimiento: string;
     fecha: string;
     descripcion: string;
     costo: string;
@@ -16,6 +20,7 @@ export type ErroresMantenimiento = Partial<Record<keyof MantenimientoFormulario,
 
 export const FORMULARIO_VACIO: MantenimientoFormulario = {
     unidadEquipoId: null,
+    tipoMantenimiento: 'PREVENTIVO',
     fecha: '',
     descripcion: '',
     costo: '',
@@ -23,6 +28,7 @@ export const FORMULARIO_VACIO: MantenimientoFormulario = {
 
 export const MENSAJES = {
     unidad: 'Selecciona una unidad de equipo válida.',
+    tipo: 'Selecciona PREVENTIVO o CORRECTIVO.',
     fecha: 'Usa el formato AAAA-MM-DD (ej. 2026-03-10).',
     descripcion: 'La descripción debe tener al menos 5 caracteres.',
     costo: 'El costo debe ser un número mayor a 0.',
@@ -60,6 +66,9 @@ export function validarMantenimiento(
 
     if (datos.unidadEquipoId === null || !idsValidos.includes(datos.unidadEquipoId)) {
         errores.unidadEquipoId = MENSAJES.unidad;
+    }
+    if (!(TIPOS_MANTENIMIENTO as readonly string[]).includes(datos.tipoMantenimiento)) {
+        errores.tipoMantenimiento = MENSAJES.tipo;
     }
     if (!esFechaValida(datos.fecha.trim())) {
         errores.fecha = MENSAJES.fecha;

@@ -3,6 +3,7 @@ import { Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-na
 import type { UnidadEquipo } from '../models/equiprent';
 import {
     FORMULARIO_VACIO,
+    TIPOS_MANTENIMIENTO,
     tieneErrores,
     validarMantenimiento,
     type ErroresMantenimiento,
@@ -12,6 +13,10 @@ import { PALETTE } from '../theme/palette';
 
 type Props = {
     unidades: readonly UnidadEquipo[];
+    /** Datos iniciales al EDITAR (o unidad preseleccionada); si se omite, empieza vacío. */
+    valorInicial?: MantenimientoFormulario;
+    /** Texto del botón principal (Guía 06: 'Guardar orden LOCAL', 'Guardar cambios LOCALES'). */
+    textoBoton?: string;
     /** Se llama solo cuando TODOS los campos son válidos. */
     alConfirmar: (datos: MantenimientoFormulario) => void;
 };
@@ -24,8 +29,13 @@ const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
  * Formulario CONTROLADO: cada TextInput lee su valor del estado (useState)
  * y lo actualiza con onChangeText. Así la validación trabaja con datos actuales.
  */
-export function MantenimientoForm({ unidades, alConfirmar }: Props) {
-    const [datos, setDatos] = useState<MantenimientoFormulario>(FORMULARIO_VACIO);
+export function MantenimientoForm({
+    unidades,
+    valorInicial,
+    textoBoton = 'Revisar datos',
+    alConfirmar,
+}: Props) {
+    const [datos, setDatos] = useState<MantenimientoFormulario>(valorInicial ?? FORMULARIO_VACIO);
     const [errores, setErrores] = useState<ErroresMantenimiento>({});
 
     // Actualiza un solo campo sin perder los demás.
@@ -43,7 +53,8 @@ export function MantenimientoForm({ unidades, alConfirmar }: Props) {
         );
         setErrores(nuevosErrores);
         if (!tieneErrores(nuevosErrores)) {
-            alConfirmar(datos);
+            // Se entregan los textos ya limpios (sin espacios sobrantes).
+            alConfirmar({ ...datos, fecha: datos.fecha.trim(), descripcion: datos.descripcion.trim() });
         }
     }
 
@@ -73,6 +84,26 @@ export function MantenimientoForm({ unidades, alConfirmar }: Props) {
                 );
             })}
             {errores.unidadEquipoId && <Text style={styles.error}>{errores.unidadEquipoId}</Text>}
+
+            <Text style={styles.etiqueta}>Tipo de mantenimiento</Text>
+            <View style={styles.chips}>
+                {TIPOS_MANTENIMIENTO.map((tipo) => {
+                    const elegido = datos.tipoMantenimiento === tipo;
+                    return (
+                        <Pressable
+                            key={tipo}
+                            onPress={() => cambiar('tipoMantenimiento', tipo)}
+                            accessibilityRole="radio"
+                            accessibilityLabel={`Tipo ${tipo}`}
+                            accessibilityState={{ selected: elegido }}
+                            style={[styles.chip, elegido && styles.chipElegido]}
+                        >
+                            <Text style={[styles.chipTexto, elegido && styles.chipTextoElegido]}>{tipo}</Text>
+                        </Pressable>
+                    );
+                })}
+            </View>
+            {errores.tipoMantenimiento && <Text style={styles.error}>{errores.tipoMantenimiento}</Text>}
 
             <Text style={styles.etiqueta}>Fecha (AAAA-MM-DD)</Text>
             <TextInput
@@ -114,10 +145,10 @@ export function MantenimientoForm({ unidades, alConfirmar }: Props) {
             <Pressable
                 onPress={revisarDatos}
                 accessibilityRole="button"
-                accessibilityLabel="Revisar datos"
+                accessibilityLabel={textoBoton}
                 style={({ pressed }) => [styles.boton, pressed && styles.botonPresionado]}
             >
-                <Text style={styles.botonTexto}>Revisar datos</Text>
+                <Text style={styles.botonTexto}>{textoBoton}</Text>
             </Pressable>
 
             <Text style={styles.nota}>Validar en el móvil no reemplaza validar en Spring Boot.</Text>
@@ -158,6 +189,19 @@ const styles = StyleSheet.create({
     },
     radioElegido: { borderColor: PALETTE.lima },
     radioPunto: { width: 8, height: 8, borderRadius: 4, backgroundColor: PALETTE.lima },
+    chips: { flexDirection: 'row', gap: 8 },
+    chip: {
+        flex: 1,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: PALETTE.borde,
+        backgroundColor: PALETTE.superficie,
+        borderRadius: 99,
+        paddingVertical: 10,
+    },
+    chipElegido: { backgroundColor: PALETTE.acentoClaro, borderColor: PALETTE.lima },
+    chipTexto: { color: PALETTE.secundario, fontWeight: '800', fontSize: 12, letterSpacing: 1 },
+    chipTextoElegido: { color: PALETTE.lima },
     opcionCodigo: { fontFamily: MONO, color: PALETTE.lima, fontWeight: '700' },
     opcionTexto: { color: PALETTE.principal, fontWeight: '700' },
     input: {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { EmptyState } from '../../components/EmptyState';
 import { MantenimientoNavegable } from '../../components/MantenimientoNavegable';
 import { ReturnButton } from '../../components/ReturnButton';
 import { useEquipRent } from '../../state/EquipRentContext';
@@ -20,7 +21,7 @@ export default function MantenimientosScreen() {
                     <ReturnButton destinoSiNoHayHistorial="/" />
                     <Text style={styles.titulo}>Órdenes de Mantenimiento</Text>
                     <Text style={styles.ayuda}>
-                        Guía 04: primero validaremos el formulario, después guardaremos.
+                        CRUD LOCAL: crear, editar y eliminar órdenes. Se reinicia al recargar la app.
                     </Text>
                     <Link href="/mantenimientos/nuevo" asChild>
                         <Pressable
@@ -28,7 +29,7 @@ export default function MantenimientosScreen() {
                             accessibilityRole="link"
                             accessibilityLabel="Abrir formulario de nueva orden"
                         >
-                            <Text style={styles.nuevoTexto}>+ Formulario nueva orden</Text>
+                            <Text style={styles.nuevoTexto}>+ Nueva orden de taller</Text>
                         </Pressable>
                     </Link>
                 </View>
@@ -43,6 +44,7 @@ export default function MantenimientosScreen() {
                     />
                 );
             }}
+            ListEmptyComponent={<EmptyState mensaje="No hay órdenes de taller. Registra la primera." />}
             ListFooterComponent={
                 <Text style={styles.pie}>Estado en memoria · {mantenimientos.length} orden(es)</Text>
             }

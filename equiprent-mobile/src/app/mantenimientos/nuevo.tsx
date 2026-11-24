@@ -1,30 +1,26 @@
 import React from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { MantenimientoForm } from '../../components/MantenimientoForm';
-import type { MantenimientoFormulario } from '../../domain/validaciones';
+import { FORMULARIO_VACIO, leerCosto } from '../../domain/validaciones';
 import { useEquipRent } from '../../state/EquipRentContext';
+import { siguienteId } from '../../state/equiprentReducer';
 import { PALETTE } from '../../theme/palette';
+import { leerIdPositivo } from '../../utils/routeParams';
 
 /**
- * Ruta /mantenimientos/nuevo : Nueva Orden de Taller.
- * Guía 05: las unidades del selector salen del estado compartido, así una unidad
- * recién registrada ya se puede elegir. Todavía solo VALIDA: el guardado local
- * (MANTENIMIENTO_CREAR) llega en la Guía 06.
+ * Ruta /mantenimientos/nuevo : alta LOCAL de una orden de taller (Guía 06).
+ * Opcional: /mantenimientos/nuevo?unidadId=2 preselecciona la unidad (lado 1).
+ * Guarda con dispatch MANTENIMIENTO_CREAR; el reducer rechaza una unidad inexistente.
  */
 export default function NuevaOrdenScreen() {
-    const { unidades } = useEquipRent();
+    const router = useRouter();
+    const { unidadId } = useLocalSearchParams<{ unidadId?: string }>();
+    const { unidades, mantenimientos, dispatch } = useEquipRent();
 
-    function alConfirmar(datos: MantenimientoFormulario) {
-        const unidad = unidades.find((u) => u.id === datos.unidadEquipoId);
-        Alert.alert(
-            'Datos válidos',
-            `Unidad: ${unidad?.codigoInventario ?? '-'}\n` +
-            `Fecha: ${datos.fecha}\n` +
-            `Descripción: ${datos.descripcion.trim()}\n` +
-            `Costo: $${datos.costo}\n\n` +
-            'Aún no se guarda (Guía 06).'
-        );
-    }
+    // Solo se preselecciona si el id de la ruta corresponde a una unidad existente.
+    const preseleccion = leerIdPositivo(unidadId);
+    const unidadInicial = unidades.some((u) => u.id === preseleccion) ? preseleccion : null;
 
     return (
         <KeyboardAvoidingView
@@ -32,7 +28,28 @@ export default function NuevaOrdenScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <ScrollView contentContainerStyle={styles.contenido} keyboardShouldPersistTaps="handled">
-                <MantenimientoForm unidades={unidades} alConfirmar={alConfirmar} />
+                <MantenimientoForm
+                    unidades={unidades}
+                    valorInicial={{ ...FORMULARIO_VACIO, unidadEquipoId: unidadInicial }}
+                    textoBoton="Guardar orden LOCAL"
+                    alConfirmar={(datos) => {
+                        if (datos.unidadEquipoId === null) return; // ya validado en el formulario
+                        dispatch({
+                            type: 'MANTENIMIENTO_CREAR',
+                            payload: {
+                                id: siguienteId(mantenimientos),
+                                unidadEquipoId: datos.unidadEquipoId,
+                                tipoMantenimiento: datos.tipoMantenimiento,
+                                fecha: datos.fecha,
+                                descripcion: datos.descripcion,
+                                costo: leerCosto(datos.costo),
+                                activo: true,
+                            },
+                        });
+                        // replace: el formulario no queda en el historial.
+                        router.replace('/mantenimientos');
+                    }}
+                />
             </ScrollView>
         </KeyboardAvoidingView>
     );
