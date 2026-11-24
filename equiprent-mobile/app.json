@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "equiprent-mobile",
+    "name": "EquipRent",
     "slug": "equiprent-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,12 +11,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0b0614",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "bo.upsa.equiprent.mobile",
+      "versionCode": 1,
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
