@@ -129,6 +129,11 @@ export default function DetalleOrdenRemotaScreen() {
                     <Text style={styles.botonTexto}>Editar en PostgreSQL</Text>
                 </Pressable>
             </Link>
+            <Link href={{ pathname: '/remoto/fotos', params: { mantenimientoId: String(orden.id) } }} asChild>
+                <Pressable style={styles.accion} accessibilityRole="link" accessibilityLabel="Evidencia fotográfica">
+                    <Text style={styles.accionTexto}>Evidencia fotográfica (cámara / galería)</Text>
+                </Pressable>
+            </Link>
             <Pressable
                 onPress={confirmarEliminar}
                 disabled={eliminando}

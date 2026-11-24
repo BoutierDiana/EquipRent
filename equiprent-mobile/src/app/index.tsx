@@ -88,7 +88,7 @@ export default function InicioScreen() {
                 recargar). El catálogo remoto consulta la API REST de Spring Boot.
             </Text>
             <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
-            <Text style={styles.capas}>Guía 11 · dominio · infra (local + http) · hooks · pantallas</Text>
+            <Text style={styles.capas}>Guía 13 · dominio · infra (local + http) · hooks · pantallas</Text>
         </ScrollView>
     );
 }

@@ -18,6 +18,9 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
@@ -32,7 +35,8 @@ import java.util.Map;
  *   404 -> recurso inexistente o ruta inexistente
  *   405 -> método HTTP no soportado por la ruta
  *   409 -> conflicto con los datos actuales (duplicados, dependencias, integridad)
- *   415 -> Content-Type distinto de application/json
+ *   413 -> archivo subido demasiado grande (Guía 13)
+ *   415 -> Content-Type no soportado por la ruta
  *   500 -> cualquier otro error no previsto
  */
 @RestControllerAdvice
@@ -121,11 +125,23 @@ public class GlobalExceptionHandler {
                 request.getRequestURI(), Map.of());
     }
 
+    // 400 - Falta la parte "foto" en un multipart (Guía 13)
+    @ExceptionHandler({MissingServletRequestPartException.class, MultipartException.class})
+    public ResponseEntity<ApiError> handleMultipart(Exception ex, HttpServletRequest request) {
+        if (ex instanceof MaxUploadSizeExceededException) {
+            return buildResponse(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño máximo permitido (4 MB)",
+                    request.getRequestURI(), Map.of());
+        }
+        return buildResponse(HttpStatus.BAD_REQUEST,
+                "Envía la imagen como multipart/form-data en el campo 'foto'",
+                request.getRequestURI(), Map.of());
+    }
+
     // 415 - Content-Type incorrecto
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
     public ResponseEntity<ApiError> handleMediaType(HttpMediaTypeNotSupportedException ex, HttpServletRequest request) {
         return buildResponse(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "El cuerpo debe enviarse con Content-Type: application/json",
+                "Content-Type no soportado: usa application/json (o multipart/form-data para fotos)",
                 request.getRequestURI(), Map.of());
     }
 

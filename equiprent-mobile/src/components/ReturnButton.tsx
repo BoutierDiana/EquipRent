@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PALETTE } from '../theme/palette';
 
 // Destinos permitidos cuando no existe una pantalla anterior en la pila.
-type Destino = '/' | '/unidades' | '/mantenimientos' | '/remoto' | '/remoto/unidades' | '/remoto/mantenimientos';
+type Destino = '/' | '/unidades' | '/mantenimientos' | '/remoto' | '/remoto/unidades' | '/remoto/mantenimientos' | '/remoto/offline';
 type Props = { destinoSiNoHayHistorial: Destino };
 
 export function ReturnButton({ destinoSiNoHayHistorial }: Props) {
