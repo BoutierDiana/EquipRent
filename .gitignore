@@ -9,3 +9,6 @@ node_modules/
 
 # Variables de entorno locales
 .env.local
+
+   equiprent-mobile-old/
+equiprent-mobile-old/

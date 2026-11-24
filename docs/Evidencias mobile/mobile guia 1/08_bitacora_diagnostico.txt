@@ -1,0 +1,92 @@
+BITACORA DE DIAGNOSTICO - GUIA 01 (EquipRent Mobile)
+Proyecto: equiprent-mobile | Dispositivo: AVD Pixel_8_EquipRent (API 36)
+Fecha: 29/10/2026
+Metodo: 1) Que esperaba  2) Que paso  3) En que frontera falla  4) Una hipotesis a probar
+
+======================================================================
+DIAGNOSTICO 1 - Proyecto con estructura distinta a la guia
+======================================================================
+Problema:      La guia indica editar App.tsx en la raiz, pero la carpeta
+               equiprent-mobile existente no tenia App.tsx.
+Evidencia:     "dir app" -> la ruta no existe. Los archivos estaban en
+               src/app/_layout.tsx y src/app/index.tsx.
+               package.json -> "main": "expo-router/entry".
+Frontera:      Proyecto / plantilla (no es error de Android ni de codigo).
+Hipotesis:     El proyecto se creo con la plantilla por defecto de Expo
+               (con Expo Router), no con blank-typescript.
+Accion minima: Respaldar sin borrar: Rename-Item equiprent-mobile
+               equiprent-mobile-old. Crear de nuevo con
+               npx create-expo-app@latest equiprent-mobile --template blank-typescript
+Comprobacion:  dir equiprent-mobile
+Resultado:     Aparecen App.tsx, index.ts, app.json, package.json,
+               tsconfig.json, assets/. Sin android/ (correcto en Expo managed).
+
+======================================================================
+DIAGNOSTICO 2 - Rename-Item: archivo en uso
+======================================================================
+Problema:      "El proceso no puede obtener acceso al archivo porque esta
+               siendo utilizado en otro proceso."
+Evidencia:     El servidor Expo y el editor tenian abierta la carpeta.
+Frontera:      Windows (bloqueo de archivos), no React Native.
+Hipotesis:     Metro/Node o VS Code mantienen la carpeta bloqueada.
+Accion minima: Detener Expo con Ctrl+C y cerrar el editor y terminales
+               ubicadas dentro de la carpeta.
+Comprobacion:  Repetir Rename-Item.
+Resultado:     Carpeta renombrada a equiprent-mobile-old correctamente.
+
+======================================================================
+DIAGNOSTICO 3 - "El directorio ya existe" al crear el proyecto
+======================================================================
+Problema:      create-expo-app indica que la carpeta ya contiene archivos
+               ("Try using a new directory name, or moving these files").
+Evidencia:     La lista mostrada incluye App.tsx, index.ts, package.json.
+               "dir" en EquipRent muestra equiprent-mobile creada a las 18:04.
+Frontera:      Proyecto (corresponde al error frecuente N.o 4 de la guia).
+Hipotesis:     El comando ya se habia ejecutado con exito antes.
+Accion minima: No sobrescribir; usar el proyecto existente valido.
+Comprobacion:  Verificar que contiene App.tsx y package.json.
+Resultado:     Proyecto valido; se continua con el paso 25.
+
+======================================================================
+DIAGNOSTICO 4 - Error 255 al abrir la app en Android
+======================================================================
+Problema:      Al pulsar "a": CommandError: ...adb -s emulator-5554 shell
+               'am' 'start' ... 'exp://192.168.1.12:8081' exited with
+               non-zero code: 255
+Evidencia:     "Downloading the Expo Go app ... 100% 0.0s" justo antes
+               del error. adb devices mostraba emulator-5554 device.
+Frontera:      Android / ADB / Expo Go (el codigo no habia cambiado).
+Hipotesis:     Expo Go aun no estaba instalado o listo en el emulador
+               cuando Expo intento abrir el enlace exp://.
+Accion minima: Sin detener Metro, pulsar "a" una segunda vez.
+Comprobacion:  Observar la terminal Expo y el emulador.
+Resultado:     "Opening exp://192.168.1.12:8081 on Pixel_8_EquipRent" y
+               "Android Bundled 7235ms ... (1442 modules)". La app abre.
+
+======================================================================
+DIAGNOSTICO 5 - El respaldo aparecia para subir a Git
+======================================================================
+Problema:      git status mostraba equiprent-mobile-old/ en Untracked files.
+Evidencia:     type .gitignore -> la linea equiprent-mobile-old/ no existia
+               (se habia editado otro archivo .gitignore).
+Frontera:      Git / configuracion del repositorio.
+Hipotesis:     La regla no estaba en el .gitignore de la raiz del repo.
+Accion minima: Add-Content -Path .gitignore -Value "`nequiprent-mobile-old/"
+Comprobacion:  type .gitignore y git status
+Resultado:     ____________________________ (completar tras verificar que
+               equiprent-mobile-old/ ya no aparece en git status)
+
+======================================================================
+DIAGNOSTICO 6 - adb devices -1 muestra solo la ayuda del comando
+======================================================================
+Problema:      Al ejecutar "adb devices -1" no aparece la lista de
+               dispositivos; solo: adb.exe: adb devices [-l]
+Evidencia:     La salida es el mensaje de uso del comando, no un error de
+               conexion. node -v y npm -v funcionan en la misma terminal.
+Frontera:      Comando escrito (usuario), no Android ni ADB.
+Hipotesis:     Se escribio el numero 1 en lugar de la letra L minuscula.
+               ADB solo acepta la opcion -l ("long", informacion detallada).
+Accion minima: Repetir el comando con la letra L: adb devices -l
+Comprobacion:  Con el emulador encendido, la salida debe listar
+               emulator-5554 con estado device.
+Resultado:     ____________________________ (completar tras repetirlo)
