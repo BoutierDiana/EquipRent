@@ -1,3 +1,5 @@
+import { codigoOcupado, serieOcupada } from './equiprentRules';
+
 // Reglas de validación del formulario "Nueva Orden de Taller".
 // Funciones puras: no dibujan nada ni guardan nada; solo reciben datos y
 // devuelven los mensajes de error. Validar en el móvil mejora la experiencia,
@@ -154,18 +156,17 @@ export function validarUnidad(
     idActual: number | null = null
 ): ErroresUnidad {
     const errores: ErroresUnidad = {};
-    const otras = existentes.filter((u) => u.id !== idActual);
     const codigo = normalizarCodigo(datos.codigoInventario);
     const serie = normalizarCodigo(datos.numeroSerie);
 
     if (!/^EQ-\d{3,5}$/.test(codigo)) {
         errores.codigoInventario = MENSAJES_UNIDAD.codigo;
-    } else if (otras.some((u) => u.codigoInventario === codigo)) {
+    } else if (codigoOcupado(codigo, existentes, idActual ?? undefined)) {
         errores.codigoInventario = MENSAJES_UNIDAD.codigoDuplicado;
     }
     if (serie.length < 4) {
         errores.numeroSerie = MENSAJES_UNIDAD.serie;
-    } else if (otras.some((u) => u.numeroSerie === serie)) {
+    } else if (serieOcupada(serie, existentes, idActual ?? undefined)) {
         errores.numeroSerie = MENSAJES_UNIDAD.serieDuplicada;
     }
     if (datos.marca.trim().length < 2) {
