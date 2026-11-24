@@ -1,61 +1,22 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useLocalSearchParams } from 'expo-router';
-import {
-    ActivityIndicator,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import React from 'react';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { EmptyState } from '../../components/EmptyState';
 import { MantenimientoNavegable } from '../../components/MantenimientoNavegable';
 import { ReturnButton } from '../../components/ReturnButton';
-import { MANTENIMIENTOS } from '../../data/demoData';
-import type { UnidadEquipo } from '../../models/equiprent';
-import { HttpError } from '../../services/apiClient';
-import { unidadesService } from '../../services/unidadesService';
+import { useEquipRent } from '../../state/EquipRentContext';
 import { PALETTE } from '../../theme/palette';
+import { formatearCatalogo } from '../../utils/formato';
 import { leerIdPositivo } from '../../utils/routeParams';
 
-/** Ruta /unidades/1, /unidades/2 ... : ficha de la unidad y sus N mantenimientos. */
+/** Ruta /unidades/1, /unidades/2 ... : ficha LOCAL de la unidad, editar, eliminar y sus N mantenimientos. */
 export default function DetalleUnidadScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const unidadId = leerIdPositivo(id);
+    const router = useRouter();
+    const { unidades, mantenimientos, dispatch } = useEquipRent();
+    const unidad = unidades.find((u) => u.id === leerIdPositivo(id));
 
-    const [unidad, setUnidad] = useState<UnidadEquipo | null>(null);
-    const [cargando, setCargando] = useState(unidadId !== null);
-    const [error, setError] = useState<string | null>(null);
-    const [noEncontrada, setNoEncontrada] = useState(false);
-
-    // El id de la ruta viaja al backend: GET /api/unidades-equipo/{id}
-    const cargarDatos = useCallback(async () => {
-        if (unidadId === null) {
-            return;
-        }
-        setCargando(true);
-        setError(null);
-        setNoEncontrada(false);
-        try {
-            setUnidad(await unidadesService.obtenerPorId(unidadId));
-        } catch (e) {
-            if (e instanceof HttpError && e.status === 404) {
-                setNoEncontrada(true); // error de DATOS, no de red
-            } else {
-                setError(e instanceof Error ? e.message : 'Error desconocido al cargar la unidad.');
-            }
-        } finally {
-            setCargando(false);
-        }
-    }, [unidadId]);
-
-    useEffect(() => {
-        void cargarDatos();
-    }, [cargarDatos]);
-
-    // ID mal formado ('abc', '0', '-1'): se rechaza ANTES de consultar el backend.
-    if (unidadId === null || noEncontrada) {
+    if (!unidad) {
         return (
             <View style={styles.contenido}>
                 <ReturnButton destinoSiNoHayHistorial="/unidades" />
@@ -69,35 +30,31 @@ export default function DetalleUnidadScreen() {
         );
     }
 
-    if (cargando) {
-        return (
-            <View style={styles.centro}>
-                <ActivityIndicator size="large" color={PALETTE.lima} />
-            </View>
-        );
-    }
+    // Relación 1:N: los mantenimientos cuyo unidadEquipoId coincide con esta unidad.
+    const asociados = mantenimientos.filter((m) => m.unidadEquipoId === unidad.id);
 
-    if (error || !unidad) {
-        return (
-            <View style={styles.centro}>
-                <Text style={styles.errorTitulo}>Error de Comunicación</Text>
-                <Text style={styles.errorTexto}>{error}</Text>
-                <Pressable
-                    onPress={() => void cargarDatos()}
-                    accessibilityRole="button"
-                    accessibilityLabel="Reintentar conexión"
-                    style={styles.reintentar}
-                >
-                    <Text style={styles.reintentarTexto}>Reintentar conexión</Text>
-                </Pressable>
-            </View>
-        );
+    function confirmarEliminar() {
+        if (!unidad) return;
+        if (asociados.length > 0) {
+            Alert.alert(
+                'No se puede eliminar',
+                `${unidad.codigoInventario} tiene ${asociados.length} mantenimiento(s). ` +
+                    'Primero elimínalos o reasígnalos (regla 1:N).'
+            );
+            return;
+        }
+        Alert.alert('Confirmación', `¿Eliminar la unidad ${unidad.codigoInventario}?`, [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+                text: 'Eliminar',
+                style: 'destructive',
+                onPress: () => {
+                    dispatch({ type: 'UNIDAD_ELIMINAR', id: unidad.id });
+                    router.replace('/unidades');
+                },
+            },
+        ]);
     }
-
-    // Relación 1:N: los mantenimientos cuyo unidadEquipoId coincide con la unidad.
-    // (Datos locales de demostración: el contrato del backend de Mantenimiento
-    // todavía no incluye descripcion ni costo.)
-    const mantenimientos = MANTENIMIENTOS.filter((m) => m.unidadEquipoId === unidad.id);
 
     return (
         <ScrollView contentContainerStyle={styles.contenido}>
@@ -114,7 +71,7 @@ export default function DetalleUnidadScreen() {
                 </View>
                 <View style={styles.filaDato}>
                     <Text style={styles.datoEtiqueta}>Estado Operativo:</Text>
-                    <Text style={styles.datoLima}>{unidad.estadoOperativo}</Text>
+                    <Text style={styles.datoLima}>{formatearCatalogo(unidad.estadoOperativo)}</Text>
                 </View>
                 <View style={styles.filaDato}>
                     <Text style={styles.datoEtiqueta}>Registro:</Text>
@@ -122,14 +79,30 @@ export default function DetalleUnidadScreen() {
                 </View>
             </View>
 
-            <Text style={styles.subtitulo}>
-                Historial de Mantenimientos (1:N) · {mantenimientos.length}
-            </Text>
+            <Link href={{ pathname: '/unidades/editar/[id]', params: { id: String(unidad.id) } }} asChild>
+                <Pressable
+                    style={({ pressed }) => [styles.boton, pressed && styles.presionado]}
+                    accessibilityRole="link"
+                    accessibilityLabel="Editar unidad"
+                >
+                    <Text style={styles.botonTexto}>Editar unidad</Text>
+                </Pressable>
+            </Link>
+            <Pressable
+                onPress={confirmarEliminar}
+                style={({ pressed }) => [styles.peligro, pressed && styles.presionado]}
+                accessibilityRole="button"
+                accessibilityLabel="Eliminar unidad"
+            >
+                <Text style={styles.peligroTexto}>Eliminar unidad</Text>
+            </Pressable>
 
-            {mantenimientos.length === 0 ? (
+            <Text style={styles.subtitulo}>Historial de Mantenimientos (1:N) · {asociados.length}</Text>
+
+            {asociados.length === 0 ? (
                 <EmptyState mensaje="Esta unidad no registra órdenes de taller preventivo ni correctivo." />
             ) : (
-                mantenimientos.map((m) => (
+                asociados.map((m) => (
                     <MantenimientoNavegable
                         key={m.id}
                         mantenimiento={m}
@@ -138,12 +111,13 @@ export default function DetalleUnidadScreen() {
                 ))
             )}
 
-            <Text style={styles.pie}>Una unidad puede tener cero, uno o varios mantenimientos.</Text>
+            <Text style={styles.pie}>Una unidad con mantenimientos no se puede eliminar.</Text>
         </ScrollView>
     );
 }
 
 const MONO = Platform.select({ ios: 'Menlo', default: 'monospace' });
+const PELIGRO = '#f87171';
 
 const styles = StyleSheet.create({
     contenido: { padding: 18, paddingBottom: 40 },
@@ -169,6 +143,26 @@ const styles = StyleSheet.create({
     datoEtiqueta: { color: PALETTE.secundario },
     datoValor: { fontFamily: MONO, color: PALETTE.principal, fontWeight: '700' },
     datoLima: { color: PALETTE.lima, fontWeight: '800' },
+    boton: {
+        marginTop: 16,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: PALETTE.acento,
+        borderRadius: 10,
+    },
+    botonTexto: { color: PALETTE.principal, fontWeight: '800', letterSpacing: 1 },
+    peligro: {
+        marginTop: 10,
+        minHeight: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: PELIGRO,
+        borderRadius: 10,
+    },
+    peligroTexto: { color: PELIGRO, fontWeight: '800', letterSpacing: 1 },
+    presionado: { opacity: 0.85 },
     subtitulo: {
         fontSize: 17,
         fontWeight: '800',
@@ -179,15 +173,4 @@ const styles = StyleSheet.create({
     pie: { color: PALETTE.secundario, textAlign: 'center', marginTop: 14, fontSize: 12 },
     accion: { marginTop: 16, backgroundColor: PALETTE.acentoClaro, padding: 16, borderRadius: 12 },
     accionTexto: { color: PALETTE.principal, fontWeight: '700', textAlign: 'center' },
-    centro: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-    errorTitulo: { color: '#f87171', fontSize: 20, fontWeight: '800' },
-    errorTexto: { marginTop: 10, color: PALETTE.secundario, textAlign: 'center', lineHeight: 20 },
-    reintentar: {
-        marginTop: 20,
-        backgroundColor: PALETTE.acento,
-        borderRadius: 10,
-        paddingVertical: 12,
-        paddingHorizontal: 22,
-    },
-    reintentarTexto: { color: PALETTE.principal, fontWeight: '800' },
 });

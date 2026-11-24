@@ -2,11 +2,13 @@ import React from 'react';
 import { Link } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MetricCard } from '../components/MetricCard';
-import { MANTENIMIENTOS, UNIDADES } from '../data/demoData';
+import { useEquipRent } from '../state/EquipRentContext';
 import { PALETTE } from '../theme/palette';
 
 /** Ruta / : menú principal de EquipRent Mobile. */
 export default function InicioScreen() {
+    // Las métricas cambian en vivo al crear o eliminar registros (estado compartido).
+    const { unidades, mantenimientos } = useEquipRent();
     return (
         <ScrollView contentContainerStyle={styles.contenido}>
             <View style={styles.nodo}>
@@ -21,8 +23,8 @@ export default function InicioScreen() {
 
             {/* Métricas: el mismo componente reutilizado con props distintas */}
             <View style={styles.metricas}>
-                <MetricCard etiqueta="Unidades" valor={UNIDADES.length} />
-                <MetricCard etiqueta="Mantenimientos" valor={MANTENIMIENTOS.length} />
+                <MetricCard etiqueta="Unidades" valor={unidades.length} />
+                <MetricCard etiqueta="Mantenimientos" valor={mantenimientos.length} />
             </View>
 
             <Text style={styles.subtitulo}>Módulos disponibles</Text>
@@ -34,7 +36,7 @@ export default function InicioScreen() {
                         <Text style={styles.botonTitulo}>Catálogo de Unidades</Text>
                         <View style={styles.flecha} />
                     </View>
-                    <Text style={styles.botonSub}>Ver equipos y su historial técnico</Text>
+                    <Text style={styles.botonSub}>Registrar, editar y eliminar unidades (local)</Text>
                 </Pressable>
             </Link>
 
@@ -48,6 +50,16 @@ export default function InicioScreen() {
                 </Pressable>
             </Link>
 
+            <Link href="/remoto/unidades" asChild>
+                <Pressable style={styles.boton} accessibilityRole="link">
+                    <View style={styles.botonFila}>
+                        <Text style={styles.botonTitulo}>Catálogo remoto (API)</Text>
+                        <View style={styles.flecha} />
+                    </View>
+                    <Text style={styles.botonSub}>Unidades reales desde Spring Boot y PostgreSQL</Text>
+                </Pressable>
+            </Link>
+
             <Link href="/ayuda" asChild>
                 <Pressable style={styles.botonSuave} accessibilityRole="link">
                     <Text style={styles.botonTitulo}>Laboratorio y Casos Límite</Text>
@@ -55,8 +67,8 @@ export default function InicioScreen() {
             </Link>
 
             <Text style={styles.aviso}>
-                El catálogo de unidades consulta la API REST de Spring Boot; las métricas de inicio
-                usan los datos locales de demostración.
+                Unidades y Órdenes de Taller usan estado compartido en memoria (se reinicia al
+                recargar). El catálogo remoto consulta la API REST de Spring Boot.
             </Text>
             <Text style={styles.pie}>UnidadEquipo (1) → Mantenimiento (N)</Text>
         </ScrollView>

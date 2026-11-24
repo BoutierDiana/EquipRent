@@ -76,6 +76,97 @@ export function validarMantenimiento(
 }
 
 /** true si existe al menos un mensaje de error. */
-export function tieneErrores(errores: ErroresMantenimiento): boolean {
+export function tieneErrores(errores: ErroresMantenimiento | ErroresUnidad): boolean {
     return Object.keys(errores).length > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Guía 05: formulario de UnidadEquipo (lado 1 de la relación).
+// ---------------------------------------------------------------------------
+
+/** Catálogo de estados operativos (CHECK ck_unidad_equipo_estado_operativo en PostgreSQL). */
+export const ESTADOS_OPERATIVOS = [
+    'DISPONIBLE',
+    'RESERVADA',
+    'EN_USO',
+    'EN_MANTENIMIENTO',
+    'DE_BAJA',
+] as const;
+
+export type EstadoOperativo = (typeof ESTADOS_OPERATIVOS)[number];
+
+/** Valores del formulario de unidad tal como los escribe el usuario. */
+export type UnidadFormulario = {
+    codigoInventario: string;
+    numeroSerie: string;
+    marca: string;
+    modelo: string;
+    estadoOperativo: string;
+    activo: boolean;
+};
+
+export type ErroresUnidad = Partial<
+    Record<'codigoInventario' | 'numeroSerie' | 'marca' | 'modelo' | 'estadoOperativo', string>
+>;
+
+export const UNIDAD_VACIA: UnidadFormulario = {
+    codigoInventario: '',
+    numeroSerie: '',
+    marca: '',
+    modelo: '',
+    estadoOperativo: 'DISPONIBLE',
+    activo: true,
+};
+
+export const MENSAJES_UNIDAD = {
+    codigo: 'Usa el formato EQ-000 (ej. EQ-005).',
+    codigoDuplicado: 'Ya existe otra unidad con ese código de inventario.',
+    serie: 'El número de serie debe tener al menos 4 caracteres.',
+    serieDuplicada: 'Ya existe otra unidad con ese número de serie.',
+    marca: 'La marca debe tener al menos 2 caracteres.',
+    modelo: 'El modelo debe tener al menos 2 caracteres.',
+    estado: 'Selecciona un estado operativo del catálogo.',
+} as const;
+
+/** "eq-5 " -> "EQ-5" : el código y la serie se guardan siempre en mayúsculas. */
+export const normalizarCodigo = (texto: string): string => texto.trim().toUpperCase();
+
+/** Registro mínimo para comprobar duplicados (id + campos únicos). */
+type UnidadExistente = { id: number; codigoInventario: string; numeroSerie: string };
+
+/**
+ * Valida el formulario de unidad.
+ * @param existentes unidades ya registradas (para impedir códigos o series repetidos).
+ * @param idActual id de la unidad que se edita; se excluye de la comprobación de duplicados.
+ */
+export function validarUnidad(
+    datos: UnidadFormulario,
+    existentes: readonly UnidadExistente[],
+    idActual: number | null = null
+): ErroresUnidad {
+    const errores: ErroresUnidad = {};
+    const otras = existentes.filter((u) => u.id !== idActual);
+    const codigo = normalizarCodigo(datos.codigoInventario);
+    const serie = normalizarCodigo(datos.numeroSerie);
+
+    if (!/^EQ-\d{3,5}$/.test(codigo)) {
+        errores.codigoInventario = MENSAJES_UNIDAD.codigo;
+    } else if (otras.some((u) => u.codigoInventario === codigo)) {
+        errores.codigoInventario = MENSAJES_UNIDAD.codigoDuplicado;
+    }
+    if (serie.length < 4) {
+        errores.numeroSerie = MENSAJES_UNIDAD.serie;
+    } else if (otras.some((u) => u.numeroSerie === serie)) {
+        errores.numeroSerie = MENSAJES_UNIDAD.serieDuplicada;
+    }
+    if (datos.marca.trim().length < 2) {
+        errores.marca = MENSAJES_UNIDAD.marca;
+    }
+    if (datos.modelo.trim().length < 2) {
+        errores.modelo = MENSAJES_UNIDAD.modelo;
+    }
+    if (!(ESTADOS_OPERATIVOS as readonly string[]).includes(datos.estadoOperativo)) {
+        errores.estadoOperativo = MENSAJES_UNIDAD.estado;
+    }
+    return errores;
 }

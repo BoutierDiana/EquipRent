@@ -3,14 +3,16 @@ import { Link } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MantenimientoNavegable } from '../../components/MantenimientoNavegable';
 import { ReturnButton } from '../../components/ReturnButton';
-import { MANTENIMIENTOS, UNIDADES } from '../../data/demoData';
+import { useEquipRent } from '../../state/EquipRentContext';
 import { PALETTE } from '../../theme/palette';
 
 /** Ruta /mantenimientos : historial global de órdenes de taller. */
 export default function MantenimientosScreen() {
+    // Guía 05: las listas salen del estado compartido, no de demoData.
+    const { unidades, mantenimientos } = useEquipRent();
     return (
         <FlatList
-            data={MANTENIMIENTOS}
+            data={mantenimientos}
             keyExtractor={(mantenimiento) => String(mantenimiento.id)}
             contentContainerStyle={styles.contenido}
             ListHeaderComponent={
@@ -33,7 +35,7 @@ export default function MantenimientosScreen() {
             }
             renderItem={({ item }) => {
                 // Se resuelve la unidad por la clave foránea unidadEquipoId.
-                const unidad = UNIDADES.find((u) => u.id === item.unidadEquipoId);
+                const unidad = unidades.find((u) => u.id === item.unidadEquipoId);
                 return (
                     <MantenimientoNavegable
                         mantenimiento={item}
@@ -42,7 +44,7 @@ export default function MantenimientosScreen() {
                 );
             }}
             ListFooterComponent={
-                <Text style={styles.pie}>Datos de simulación técnica · EquipRent</Text>
+                <Text style={styles.pie}>Estado en memoria · {mantenimientos.length} orden(es)</Text>
             }
         />
     );

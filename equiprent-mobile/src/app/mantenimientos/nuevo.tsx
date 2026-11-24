@@ -1,26 +1,28 @@
 import React from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
 import { MantenimientoForm } from '../../components/MantenimientoForm';
-import { UNIDADES } from '../../data/demoData';
 import type { MantenimientoFormulario } from '../../domain/validaciones';
+import { useEquipRent } from '../../state/EquipRentContext';
 import { PALETTE } from '../../theme/palette';
 
 /**
  * Ruta /mantenimientos/nuevo : Nueva Orden de Taller.
- * Guía 04: solo VALIDA. No llama a ningún servicio ni modifica MANTENIMIENTOS,
- * por eso la lista de órdenes sigue mostrando los 5 registros (validar no es persistir).
- * El guardado real (POST /api/mantenimientos) llega en una guía posterior.
+ * Guía 05: las unidades del selector salen del estado compartido, así una unidad
+ * recién registrada ya se puede elegir. Todavía solo VALIDA: el guardado local
+ * (MANTENIMIENTO_CREAR) llega en la Guía 06.
  */
 export default function NuevaOrdenScreen() {
+    const { unidades } = useEquipRent();
+
     function alConfirmar(datos: MantenimientoFormulario) {
-        const unidad = UNIDADES.find((u) => u.id === datos.unidadEquipoId);
+        const unidad = unidades.find((u) => u.id === datos.unidadEquipoId);
         Alert.alert(
             'Datos válidos',
             `Unidad: ${unidad?.codigoInventario ?? '-'}\n` +
             `Fecha: ${datos.fecha}\n` +
             `Descripción: ${datos.descripcion.trim()}\n` +
             `Costo: $${datos.costo}\n\n` +
-            'Todavía no se envía a Spring Boot.'
+            'Aún no se guarda (Guía 06).'
         );
     }
 
@@ -30,7 +32,7 @@ export default function NuevaOrdenScreen() {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
             <ScrollView contentContainerStyle={styles.contenido} keyboardShouldPersistTaps="handled">
-                <MantenimientoForm unidades={UNIDADES} alConfirmar={alConfirmar} />
+                <MantenimientoForm unidades={unidades} alConfirmar={alConfirmar} />
             </ScrollView>
         </KeyboardAvoidingView>
     );

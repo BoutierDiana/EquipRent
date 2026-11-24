@@ -6,7 +6,7 @@ import type { Mantenimiento, UnidadEquipo } from '../models/equiprent';
 export const UNIDADES: readonly UnidadEquipo[] = [
   { id: 1, codigoInventario: 'EQ-001', numeroSerie: 'CAT-988-X1', marca: 'Caterpillar', modelo: '988K', estadoOperativo: 'DISPONIBLE', activo: true },
   { id: 2, codigoInventario: 'EQ-002', numeroSerie: 'KOM-WA-470', marca: 'Komatsu', modelo: 'WA470', estadoOperativo: 'DISPONIBLE', activo: true },
-  { id: 3, codigoInventario: 'EQ-003', numeroSerie: 'VOL-A40G', marca: 'Volvo', modelo: 'A40G', estadoOperativo: 'EN_TALLER', activo: false },
+  { id: 3, codigoInventario: 'EQ-003', numeroSerie: 'VOL-A40G', marca: 'Volvo', modelo: 'A40G', estadoOperativo: 'EN_MANTENIMIENTO', activo: false },
   { id: 4, codigoInventario: 'EQ-004', numeroSerie: 'JCB-3CX-PRO', marca: 'JCB', modelo: '3CX', estadoOperativo: 'DISPONIBLE', activo: true },
 ];
 

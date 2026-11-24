@@ -3,15 +3,16 @@ import { Link, useLocalSearchParams } from 'expo-router';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { EmptyState } from '../../components/EmptyState';
 import { ReturnButton } from '../../components/ReturnButton';
-import { MANTENIMIENTOS, UNIDADES } from '../../data/demoData';
+import { useEquipRent } from '../../state/EquipRentContext';
 import { PALETTE } from '../../theme/palette';
 import { leerIdPositivo } from '../../utils/routeParams';
 
 /** Ruta /mantenimientos/1, /mantenimientos/2 ... : detalle de una orden (lado N). */
 export default function DetalleMantenimientoScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
+    const { unidades, mantenimientos } = useEquipRent();
     const mantenimientoId = leerIdPositivo(id); // 'abc' -> null
-    const mantenimiento = MANTENIMIENTOS.find((m) => m.id === mantenimientoId);
+    const mantenimiento = mantenimientos.find((m) => m.id === mantenimientoId);
 
     if (!mantenimiento) {
         return (
@@ -28,7 +29,7 @@ export default function DetalleMantenimientoScreen() {
     }
 
     // Lado 1 de la relación: la unidad dueña de esta orden.
-    const unidad = UNIDADES.find((u) => u.id === mantenimiento.unidadEquipoId);
+    const unidad = unidades.find((u) => u.id === mantenimiento.unidadEquipoId);
 
     return (
         <ScrollView contentContainerStyle={styles.contenido}>
