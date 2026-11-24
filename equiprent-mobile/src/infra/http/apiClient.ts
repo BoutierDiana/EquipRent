@@ -1,6 +1,6 @@
 // INFRAESTRUCTURA HTTP (Guía 08): cliente HTTP único de EquipRent Mobile.
 // Las pantallas NO llaman a fetch directamente: pasan por los servicios
-// (unidadesService, mantenimientosService) y los servicios pasan por aquí.
+// (unidadesApi, mantenimientosService, healthApi) y los servicios pasan por aquí.
 // Cambiar la URL o agregar cabeceras (por ejemplo, el token JWT de la Guía 11)
 // se hace en un solo lugar.
 
@@ -99,4 +99,24 @@ export async function requestHttp<T>(ruta: string, opciones: RequestInit = {}): 
 
     // 204 No Content (por ejemplo, un DELETE): datos queda en null.
     return datos as T;
+}
+
+/**
+ * Texto legible para mostrar un error en pantalla (Alert o mensaje rojo).
+ * 409 = conflicto de negocio (duplicado, tiene dependencias), 400 = validación,
+ * 404 = no existe; cualquier otro caso usa el mensaje original.
+ */
+export function mensajeDeError(error: unknown): string {
+    if (error instanceof HttpError) {
+        const prefijo =
+            error.status === 409
+                ? 'Conflicto'
+                : error.status === 400
+                  ? 'Datos rechazados'
+                  : error.status === 404
+                    ? 'No encontrado'
+                    : `Error ${error.status}`;
+        return `${prefijo} (HTTP ${error.status}): ${error.message}`;
+    }
+    return error instanceof Error ? error.message : 'Error inesperado.';
 }
