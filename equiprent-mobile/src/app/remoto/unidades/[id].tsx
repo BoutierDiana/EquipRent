@@ -11,9 +11,11 @@ import {
     View,
 } from 'react-native';
 import { EmptyState } from '../../../components/EmptyState';
+import { MantenimientoRemotoCard } from '../../../components/MantenimientoRemotoCard';
 import { ReturnButton } from '../../../components/ReturnButton';
 import { nombreEquipo } from '../../../data/catalogoEquipos';
 import { HttpError, mensajeDeError } from '../../../infra/http/apiClient';
+import { mantenimientosApi, type MantenimientoDto } from '../../../infra/http/mantenimientosApi';
 import { unidadesApi, type UnidadEquipoDto } from '../../../infra/http/unidadesApi';
 import { PALETTE } from '../../../theme/palette';
 import { formatearCatalogo, formatearFecha } from '../../../utils/formato';
@@ -23,6 +25,7 @@ import { leerIdPositivo } from '../../../utils/routeParams';
  * Ruta /remoto/unidades/[id] (Guía 09): ficha PERSISTIDA, editar y eliminar.
  * DELETE devuelve 409 si la unidad tiene mantenimientos: la regla 1:N la
  * hace cumplir el SERVIDOR, no solo el móvil.
+ * Guía 10: lista sus N órdenes con GET /api/mantenimientos/unidad-equipo/{id}.
  */
 export default function DetalleUnidadRemotaScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
@@ -30,6 +33,7 @@ export default function DetalleUnidadRemotaScreen() {
     const unidadId = leerIdPositivo(id);
 
     const [unidad, setUnidad] = useState<UnidadEquipoDto | null>(null);
+    const [ordenes, setOrdenes] = useState<MantenimientoDto[]>([]);
     const [cargando, setCargando] = useState(unidadId !== null);
     const [error, setError] = useState<string | null>(null);
     const [noEncontrada, setNoEncontrada] = useState(false);
@@ -41,7 +45,13 @@ export default function DetalleUnidadRemotaScreen() {
         setError(null);
         setNoEncontrada(false);
         try {
-            setUnidad(await unidadesApi.obtener(unidadId));
+            // Las dos consultas se hacen en paralelo: lado 1 y sus N órdenes.
+            const [dto, lista] = await Promise.all([
+                unidadesApi.obtener(unidadId),
+                mantenimientosApi.porUnidad(unidadId),
+            ]);
+            setUnidad(dto);
+            setOrdenes(lista);
         } catch (e) {
             if (e instanceof HttpError && e.status === 404) setNoEncontrada(true);
             else setError(mensajeDeError(e));
@@ -152,9 +162,39 @@ export default function DetalleUnidadRemotaScreen() {
                 )}
             </Pressable>
 
+            <Text style={styles.subtitulo}>Órdenes de mantenimiento (1:N) · {ordenes.length}</Text>
+            <Link
+                href={{ pathname: '/remoto/mantenimientos/nuevo', params: { unidadId: String(unidad.id) } }}
+                asChild
+            >
+                <Pressable
+                    style={({ pressed }) => [styles.secundario, pressed && styles.presionado]}
+                    accessibilityRole="link"
+                    accessibilityLabel="Nueva orden para esta unidad"
+                >
+                    <Text style={styles.secundarioTexto}>+ Nueva orden para esta unidad</Text>
+                </Pressable>
+            </Link>
+            {ordenes.length === 0 ? (
+                <EmptyState mensaje="Esta unidad no tiene órdenes en PostgreSQL: se puede eliminar." />
+            ) : (
+                ordenes.map((orden) => (
+                    <MantenimientoRemotoCard
+                        key={orden.id}
+                        mantenimiento={orden}
+                        serieUnidad={unidad.numeroSerie}
+                        alSeleccionar={() =>
+                            router.push({
+                                pathname: '/remoto/mantenimientos/[id]',
+                                params: { id: String(orden.id) },
+                            })
+                        }
+                    />
+                ))
+            )}
+
             <Text style={styles.pie}>
-                Si la unidad tiene mantenimientos, el backend rechaza la eliminación con 409.
-                Los mantenimientos persistidos se muestran en la Guía 10.
+                Si la unidad tiene órdenes, el backend rechaza la eliminación con 409.
             </Text>
         </ScrollView>
     );
@@ -217,6 +257,18 @@ const styles = StyleSheet.create({
     },
     peligroTexto: { color: PELIGRO, fontWeight: '800', letterSpacing: 1 },
     presionado: { opacity: 0.7 },
+    subtitulo: { fontSize: 17, fontWeight: '800', marginTop: 24, marginBottom: 12, color: PALETTE.principal },
+    secundario: {
+        minHeight: 46,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: PALETTE.acentoClaro,
+        borderWidth: 1,
+        borderColor: PALETTE.acento,
+        borderRadius: 10,
+        marginBottom: 12,
+    },
+    secundarioTexto: { color: PALETTE.lima, fontWeight: '800', letterSpacing: 1 },
     pie: { color: PALETTE.secundario, textAlign: 'center', marginTop: 16, fontSize: 12, lineHeight: 18 },
     centro: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
     errorTitulo: { color: PELIGRO, fontSize: 20, fontWeight: '800' },

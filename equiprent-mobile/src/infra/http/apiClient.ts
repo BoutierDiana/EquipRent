@@ -1,6 +1,6 @@
 // INFRAESTRUCTURA HTTP (Guía 08): cliente HTTP único de EquipRent Mobile.
 // Las pantallas NO llaman a fetch directamente: pasan por los servicios
-// (unidadesApi, mantenimientosService, healthApi) y los servicios pasan por aquí.
+// (unidadesApi, mantenimientosApi, healthApi) y los servicios pasan por aquí.
 // Cambiar la URL o agregar cabeceras (por ejemplo, el token JWT de la Guía 11)
 // se hace en un solo lugar.
 
